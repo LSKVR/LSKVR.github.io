@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <title>빨강색 입체 박스</title>
+    <!-- x3dom CSS 추가 -->
+    <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+    <!-- x3dom JavaScript 추가 -->
+    <script src="https://www.x3dom.org/download/x3dom.js"></script>
+  </head>
+  <body>
+    <!-- 3D 장면을 위한 x3d 엘리먼트, 너비와 높이를 지정함 -->
+    <x3d width="600px" height="400px">
+      <scene>
+        <!-- 초기 카메라 위치와 시점을 설정 -->
+       
+        <!-- 변환 노드를 사용하여 3D 객체의 위치 조정 (여기서는 기본 위치) -->
+ 
+          <!-- 도형(shape) 엘리먼트로 기하구조와 외관을 정의 -->
+          <shape>
+            <box size="1 5 1"></box>
+             
+            <!-- 빨강색 재질 적용 (diffuseColor는 빨강색을 의미함)-->
+            <appearance>
+              <material diffuseColor="1 1 0"></material>
+            </appearance>
+            <!-- 박스 모양의 기하구조 정의, 기본 크기는 2x2x2 -->
+            
+        </shape>
+
+        <shape>
+            <box size="5 1 1"></box>
+             
+            <!-- 빨강색 재질 적용 (diffuseColor는 빨강색을 의미함)-->
+            <appearance>
+              <material diffuseColor="1 1 0"></material>
+            </appearance>
+            <!-- 박스 모양의 기하구조 정의, 기본 크기는 2x2x2 -->
+            
+        </shape>
+
+        <shape>
+            <box size="1 1 5"></box>
+             
+            <!-- 빨강색 재질 적용 (diffuseColor는 빨강색을 의미함)-->
+            <appearance>
+              <material diffuseColor="1 1 0"></material>
+            </appearance>
+            <!-- 박스 모양의 기하구조 정의, 기본 크기는 2x2x2 -->
+            
+        </shape>
+      </scene>
+    </x3d>
+  </body>
+</html>
