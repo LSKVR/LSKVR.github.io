@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>X3DOM Cone Example</title>
+    <!-- X3DOM 라이브러리 불러오기 -->
+    <script src="https://www.x3dom.org/download/x3dom.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://www.x3dom.org/download/x3dom.css">
+  </head>
+  <body>
+    <h2>콘 (Cone) 예제</h2>
+
+    <x3d width="500px" height="400px">
+      <scene>
+        <shape>
+          <!-- 외형(appearance) 정의 -->
+          <appearance>
+            <material diffuseColor="1 0.5 0"></material> <!-- 주황색 -->
+          </appearance>
+          <!-- 콘 geometry -->
+          <cone bottomRadius="1" height="2"></cone>
+        </shape>
+      </scene>
+    </x3d>
+    
+  </body>
+</html>
