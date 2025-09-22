@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>X3DOM Two Cylinders</title>
+    <script src="https://www.x3dom.org/download/x3dom.js"></script>
+    <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+  </head>
+  <body>
+    <h2>빨강 실린더 누움 + 파랑 실린더</h2>
+
+    <x3d width="800px" height="400px">
+      <scene>
+        <!-- 첫 번째 실린더: 빨강, 반지름 3, 높이 25, 윗면 내쪽으로 누움 -->
+        <transform translation="0 0 0" rotation="1 0 0 1.5708"> <!-- x축 기준 90도 회전 -->
+          <shape>
+            <appearance>
+              <material diffuseColor="1 0 0"></material> <!-- 빨강 -->
+            </appearance>
+            <cylinder radius="3" height="25"></cylinder>
+          </shape>
+        </transform>
+
+        <!-- 두 번째 실린더: 파랑, 반지름 3, 높이 10 -->
+        <transform translation="10 0 0"> <!-- x축으로 이동 -->
+          <shape>
+            <appearance>
+              <material diffuseColor="0 0 1"></material> <!-- 파랑 -->
+            </appearance>
+            <cylinder radius="3" height="10"></cylinder>
+          </shape>
+        </transform>
+
+      </scene>
+    </x3d>
+
+  </body>
+</html>

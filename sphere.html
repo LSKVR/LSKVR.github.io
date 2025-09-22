@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>X3DOM Overlapping Spheres</title>
+    <script src="https://www.x3dom.org/download/x3dom.js"></script>
+    <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+  </head>
+  <body>
+    <h2>겹치는 두 구 (빨강 & 파랑)</h2>
+
+    <x3d width="600px" height="400px">
+      <scene>
+        <!-- 빨강색 구 -->
+        <transform translation="0 0 0"> <!-- 원점 위치 -->
+          <shape>
+            <appearance>
+              <material diffuseColor="1 0 0" transparency="0.5"></material> <!-- 반투명 빨강 -->
+            </appearance>
+            <sphere radius="1.5"></sphere>
+          </shape>
+        </transform>
+
+        <!-- 파랑색 구 -->
+        <transform translation="0 0 0"> <!-- 조금 앞으로 이동 -->
+          <shape>
+            <appearance>
+              <material diffuseColor="0 0 1" transparency="0.5"></material> <!-- 반투명 파랑 -->
+            </appearance>
+            <sphere radius="1.5"></sphere>
+          </shape>
+        </transform>
+
+      </scene>
+    </x3d>
+
+  </body>
+</html>
