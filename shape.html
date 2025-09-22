@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>X3DOM Overlapping Shapes</title>
+    <script src="https://www.x3dom.org/download/x3dom.js"></script>
+    <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+  </head>
+  <body>
+    <h2>원점에 겹치는 콘, 실린더, 박스, 구</h2>
+
+    <x3d width="600px" height="500px">
+      <scene>
+    <viewpoint id="front" position="0 0 20" description="Front View"></viewpoint>    
+
+        <!-- 콘 -->
+        <shape>
+             <transform translation="10 0 0"></transform>
+          <appearance>
+            <material diffuseColor="1 0.5 0" ></material> 
+            
+          </appearance>
+          <cone bottomRadius="2" height="12"></cone>
+        </shape>
+
+        <!-- 실린더 -->
+        <shape>
+          <appearance>
+            <material diffuseColor="0 0 1"></material> <!-- 파랑 반투명 -->
+          </appearance>
+          <cylinder radius="3" height="2"></cylinder>
+        </shape>
+
+        <!-- 박스 -->
+        <shape>
+          <appearance>
+            <material diffuseColor="0 1 0"></material> <!-- 초록 반투명 -->
+          </appearance>
+          <box size="3 8 3"></box>
+        </shape>
+
+        <!-- 구 -->
+        <shape>
+          <appearance>
+            <material diffuseColor="1 0 0"></material> <!-- 빨강 반투명 -->
+          </appearance>
+          <sphere radius="3"></sphere>
+        </shape>
+
+      </scene>
+    </x3d>
+
+  </body>
+</html>
