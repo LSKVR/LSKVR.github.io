@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>빨강 파랑 초록 점</title>
+  <script src="https://www.x3dom.org/release/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/release/x3dom.css">
+  <style>
+    body { margin: 0; background-color: #222; }
+  </style>
+</head>
+<body>
+  <x3d width="800px" height="600px">
+    <scene>
+
+      <!-- 🔹 네비게이션 설정 -->
+      <navigationInfo type='"EXAMINE"'></navigationInfo>
+
+      <!-- 🔴 빨강색 점 -->
+      <shape>
+        <appearance>
+          <!-- 자체발광 색상으로 빨강 -->
+          <material emissiveColor="1 0 0"></material>
+        </appearance>
+        <pointSet pointSize="10">
+          <coordinate point="0 0 0"></coordinate>
+        </pointSet>
+      </shape>
+
+      <!-- 🔵 파랑색 점 -->
+      <shape>
+        <appearance>
+          <material emissiveColor="0 0 1"></material>
+        </appearance>
+        <pointSet pointSize="10">
+          <coordinate point="1 0 0"></coordinate>
+        </pointSet>
+      </shape>
+
+      <!-- 🟢 초록색 점 -->
+      <shape>
+        <appearance>
+          <material emissiveColor="0 1 0"></material>
+        </appearance>
+        <pointSet pointSize="10">
+          <coordinate point="0 1 0"></coordinate>
+        </pointSet>
+      </shape>
+
+    </scene>
+  </x3d>
+</body>
+</html>
+

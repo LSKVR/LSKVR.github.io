@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>정육면체 모서리 선 연결</title>
+  <script src="https://www.x3dom.org/release/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/release/x3dom.css">
+  <style>
+    body { margin: 0; background: #111; }
+  </style>
+</head>
+<body>
+  <x3d width="900px" height="600px">
+    <scene>
+    <viewPoint Position = "0 0 20"></viewPoint>
+
+      <!-- 🔹 네비게이션 -->
+      <navigationInfo type='"EXAMINE"'></navigationInfo>
+
+      <!-- 🔸 정육면체 꼭짓점 점 표시 -->
+      <shape>
+        <appearance>
+          <material emissiveColor="1 0 0"></material> <!-- 빨강 점 -->
+        </appearance>
+        <pointSet pointSize="10">
+          <coordinate point="
+            -3 -3 -3,
+             3 -3 -3,
+            -3  3 -3,
+             3  3 -3,
+            -3 -3  3,
+             3 -3  3,
+            -3  3  3,
+             3  3  3
+          "></coordinate>
+        </pointSet>
+      </shape>
+
+      <!-- ✏️ 꼭짓점을 선으로 연결 (모서리 12개) -->
+      <shape>
+        <appearance>
+          <material emissiveColor="1 1 0"></material> <!-- 노란색 선 -->
+        </appearance>
+        <indexedLineSet coordIndex="
+          0 1 -1, 0 2 -1, 0 4 -1,
+          1 3 -1, 1 5 -1,
+          2 3 -1, 2 6 -1,
+          3 7 -1,
+          4 5 -1, 4 6 -1,
+          5 7 -1,
+          6 7 -1
+        ">
+          <coordinate point="
+            -3 -3 -3,
+             3 -3 -3,
+            -3  3 -3,
+             3  3 -3,
+            -3 -3  3,
+             3 -3  3,
+            -3  3  3,
+             3  3  3
+          "></coordinate>
+        </indexedLineSet>
+      </shape>
+
+    </scene>
+  </x3d>
+</body>
+</html>

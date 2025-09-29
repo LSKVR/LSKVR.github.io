@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Cube edge midpoints (12 points)</title>
+  <script src="https://www.x3dom.org/release/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/release/x3dom.css">
+  <style> body{ margin:0; background:#111; } </style>
+</head>
+<body>
+  <x3d width="900px" height="600px">
+    <scene>
+
+      <!-- 네비게이션(돌려보기) -->
+    <navigationInfo type='"EXAMINE"'></navigationInfo>
+
+    <viewpoint id="front" position="0 0 20" description="Front View"></viewpoint>    
+
+
+
+
+      <!-- 12개 엣지 중간점 (각 엣지의 midpoint) -->
+      <!-- 좌표 규칙: 엣지 중간은 두 좌표가 ±3, 나머지 하나가 0 -->
+      <shape>
+        <appearance>
+          <!-- 밝게 보이도록 자체발광 색상 사용 -->
+          <material emissiveColor="1 0.6 0"></material>
+        </appearance>
+        <pointSet pointSize="12">
+          <coordinate point="
+            0  3  3,
+            0  3 -3,
+            0 -3  3,
+            0 -3 -3,
+
+            3  0  3,
+            3  0 -3,
+           -3  0  3,
+           -3  0 -3,
+
+            3  3  0,
+            3 -3  0,
+           -3  3  0,
+           -3 -3  0
+          "></coordinate>
+        </pointSet>
+      </shape>
+
+    </scene>
+  </x3d>
+</body>
+</html>

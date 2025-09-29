@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>X3DOM 네비게이션 예시</title>
+  <script src="https://www.x3dom.org/release/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/release/x3dom.css">
+  <style>
+    body { margin: 0; background-color: #eee; }
+  </style>
+</head>
+<body>
+  <x3d width="800px" height="600px">
+    <scene>
+      
+      <!-- 🔹 네비게이션 설정 -->
+      <navigationInfo 
+        headlight = 'off'
+        type="walk" 
+        avatarSize="1.8 0.4 0.25" 
+        speed="5"
+        visibilityLimit="10">
+      </navigationInfo>
+      
+    
+
+      <!-- 🔹 빨간색 박스 -->
+      <transform translation="0 0 0">
+        <shape>
+          <appearance>
+            <material diffuseColor="1 0 0"></material>
+          </appearance>
+          <box size="2 2 2"></box>
+        </shape>
+      </transform>
+
+    </scene>
+  </x3d>
+</body>
+</html>

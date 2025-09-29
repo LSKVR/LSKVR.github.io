@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>RGB 점과 선 연결</title>
+  <script src="https://www.x3dom.org/release/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/release/x3dom.css">
+  <style>
+    body { margin: 0; background-color: #111; }
+  </style>
+</head>
+<body>
+  <x3d width="800px" height="600px">
+    <scene>
+
+      <!-- 🔹 네비게이션 (회전 가능) -->
+      <navigationInfo type='"EXAMINE"'></navigationInfo>
+
+      <!-- 🔴 빨강 점 (-2, 0, 0) -->
+      <shape>
+        <appearance>
+          <material emissiveColor="1 0 0"></material>
+        </appearance>
+        <pointSet pointSize="10">
+          <coordinate point="-2 0 0"></coordinate>
+        </pointSet>
+      </shape>
+
+      <!-- 🟢 초록 점 (0, 4, 0) -->
+      <shape>
+        <appearance>
+          <material emissiveColor="0 1 0"></material>
+        </appearance>
+        <pointSet pointSize="10">
+          <coordinate point="0 4 0"></coordinate>
+        </pointSet>
+      </shape>
+
+      <!-- 🔵 파랑 점 (2, 0, 0) -->
+      <shape>
+        <appearance>
+          <material emissiveColor="0 0 1"></material>
+        </appearance>
+        <pointSet pointSize="10">
+          <coordinate point="2 0 0"></coordinate>
+        </pointSet>
+      </shape>
+
+      <!-- ✏️ 세 점을 연결하는 선(LineSet) -->
+      <shape>
+        <appearance>
+          <material emissiveColor="1 1 0"></material> <!-- 노란색 선 -->
+        </appearance>
+        <indexedLineSet coordIndex="0 1 2 0 -1">
+          <coordinate point="-2 0 0, 0 4 0, 2 0 0"></coordinate>
+        </indexedLineSet>
+      </shape>
+
+    </scene>
+  </x3d>
+</body>
+</html>
