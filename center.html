@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>실린더 X3DOM</title>
+    <script type="text/javascript" src="https://www.x3dom.org/download/x3dom.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://www.x3dom.org/download/x3dom.css">
+  </head>
+  <body>
+    <x3d width="400px" height="400px">
+      <scene>
+        <transform translation="0 0 0" scale="1 2 1" rotation = "0 0 1 1.57" center="1 0 0">
+          <shape>
+            <appearance>
+              <material diffuseColor="1 0 0"></material> <!-- 빨강색 -->
+            </appearance>
+            <cylinder height="2" radius="0.5"></cylinder>
+          </shape>
+        </transform>
+
+        <transform translation="0 0 0" scale="1 2 1" rotation = "0 0 1 1.57" center="-1 0 0"">
+          <shape>
+            <appearance>
+              <material diffuseColor="0 1 0"></material> <!-- 초록색 -->
+            </appearance>
+            <cylinder height="2" radius="0.5"></cylinder>
+          </shape>
+        </transform>
+      </scene>
+    </x3d>
+  </body>
+</html>

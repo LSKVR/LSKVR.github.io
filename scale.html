@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>복제 가능한 얼굴 X3DOM</title>
+    <script type="text/javascript" src="https://www.x3dom.org/download/x3dom.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://www.x3dom.org/download/x3dom.css">
+  </head>
+  <body>
+    <x3d width="800px" height="600px">
+      <scene>
+        <!-- 얼굴 전체를 Transform으로 정의 -->
+        <Transform DEF="face" rotation="0 1 0 -1.57">
+          <!-- 얼굴 -->
+          <Transform translation="0 0 -1" scale="2 2.5 1.5">
+            <Shape>
+              <Appearance>
+                <Material diffuseColor="1 0.8 0.6"></Material>
+              </Appearance>
+              <Sphere radius="1"></Sphere>
+            </Shape>
+          </Transform>
+
+          <!-- 왼쪽 눈 -->
+          <Transform translation="-0.6 0.8 0.5" scale="0.3 0.3 0.3">
+            <Shape>
+              <Appearance>
+                <Material diffuseColor="1 1 1"></Material>
+              </Appearance>
+              <Sphere radius="1"></Sphere>
+            </Shape>
+          </Transform>
+
+          <!-- 오른쪽 눈 -->
+          <Transform translation="0.6 0.8 0.5" scale="0.3 0.3 0.3">
+            <Shape>
+              <Appearance>
+                <Material diffuseColor="1 1 1"></Material>
+              </Appearance>
+              <Sphere radius="1"></Sphere>
+            </Shape>
+          </Transform>
+
+          <!-- 코 -->
+          <Transform translation="0 0.3 0.6" scale="0.2 0.5 0.2">
+            <Shape>
+              <Appearance>
+                <Material diffuseColor="1 0.5 0.5"></Material>
+              </Appearance>
+              <Box size="1 1 1"></Box>
+            </Shape>
+          </Transform>
+
+          <!-- 입 -->
+          <Transform translation="0 -0.8 0.6" scale="0.6 0.2 0.2">
+            <Shape>
+              <Appearance>
+                <Material diffuseColor="1 0 0"></Material>
+              </Appearance>
+              <Box size="1 1 1"></Box>
+            </Shape>
+          </Transform>
+
+          <!-- 왼쪽 귀 -->
+          <Transform translation="-2 0.5 0" scale="0.3 0.6 0.2">
+            <Shape>
+              <Appearance>
+                <Material diffuseColor="1 0.8 0.6"></Material>
+              </Appearance>
+              <Sphere radius="1"></Sphere>
+            </Shape>
+          </Transform>
+
+          <!-- 오른쪽 귀 -->
+          <Transform translation="2 0.5 0" scale="0.3 0.6 0.2">
+            <Shape>
+              <Appearance>
+                <Material diffuseColor="1 0.8 0.6"></Material>
+              </Appearance>
+              <Sphere radius="1"></Sphere>
+            </Shape>
+          </Transform>
+
+          <!-- 모자 -->
+          <Transform translation="0 2.5 -1" scale="1 1 1">
+            <Shape>
+              <Appearance>
+                <Material diffuseColor="0 0 1"></Material>
+              </Appearance>
+              <Cone bottomRadius="2" height="2"></Cone>
+            </Shape>
+          </Transform>
+        </Transform>
+
+        <!-- 복제 1: 왼쪽 -->
+        <Transform translation="-5 0 0" USE="face"></Transform>
+
+        <!-- 복제 2: 오른쪽 -->
+        <Transform translation="5 0 0" USE="face"></Transform>
+      </scene>
+    </x3d>
+  </body>
+</html>
+

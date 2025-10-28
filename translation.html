@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>X3DOM Boxes</title>
+    <script src="https://www.x3dom.org/download/x3dom.js"></script>
+    <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+</head>
+<body>
+<x3d width="600px" height="400px">
+    <scene>
+
+        <!-- 빨강 박스 -->
+        <transform translation="3 0 0" >
+            <shape>
+                <appearance>
+                    <material diffuseColor="1 0 0"></material>
+                </appearance>
+                <box></box>
+
+            </shape>
+        </transform>
+
+        <!-- 초록 박스 -->
+        <transform translation="-3 0 0">
+            <shape>
+                <appearance>
+                    <material diffuseColor="0 1 0"></material>
+                </appearance>
+                <box></box>
+            </shape>
+        </transform>
+
+        <!-- 파랑 박스 -->
+        <transform translation="0 3 0">
+            <shape>
+                <appearance>
+                    <material diffuseColor="0 0 1"></material>
+                </appearance>
+                <box></box>
+            </shape>
+        </transform>
+
+        <transform translation="0 -3 0">
+            <shape>
+                <appearance>
+                    <material diffuseColor="1 1 0"></material>
+                </appearance>
+                <box></box>
+
+            </shape>
+        </transform>
+
+        <transform translation="0 0 3">
+            <shape>
+                <appearance>
+                    <material diffuseColor="0 1 1"></material>
+                </appearance>
+                <box></box>
+
+            </shape>
+        </transform>
+
+        <transform translation="0 0 -3">
+            <shape>
+                <appearance>
+                    <material diffuseColor="1 0 1"></material>
+                </appearance>
+                <box></box>
+
+            </shape>
+        </transform>
+
+        <transform translation="0 0 0">
+            <shape>
+                <appearance>
+                    <material diffuseColor="0 0 0"></material>
+                </appearance>
+                <box size = "0.5 0.5 0.5"></box>
+
+            </shape>
+        </transform>
+
+    </scene>
+</x3d>
+
+</body>
+</html>
