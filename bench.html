@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>X3DOM 공원 벤치 (등받이 붙임)</title>
+  <script src="https://www.x3dom.org/release/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/release/x3dom.css">
+</head>
+<body>
+  <x3d width="800px" height="500px">
+    <scene>
+      <!-- 카메라 -->
+      <viewpoint position="0 5 50" orientation="1 0 0 -0.2"></viewpoint>
+
+      <transform id = "groupBench"> <!--밴치 5개-->
+      <transform id = "bench"> <!--밴치 1개-->
+      <!-- 좌판 -->
+      <transform translation="0 2 0">
+        <shape>
+          <appearance>
+            <material diffuseColor="0.55 0.27 0.07"></material>
+          </appearance>
+          <box size="12 0.5 2"></box> <!-- 길쭉한 좌판 -->
+        </shape>
+      </transform>
+
+      <!-- 등받이 (좌판 바로 뒤에 붙임) -->
+      <transform translation="0 3 0.75">
+        <shape>
+          <appearance>
+            <material diffuseColor="0.55 0.27 0.07"></material>
+          </appearance>
+          <box size="12 1 0.5"></box>
+        </shape>
+      </transform>
+
+      <!-- 왼쪽 앞 다리 -->
+      <transform translation="-5.5 1 0.8">
+        <shape>
+          <appearance>
+            <material diffuseColor="0.4 0.2 0.1"></material>
+          </appearance>
+          <box size="0.5 2 0.5"></box>
+        </shape>
+      </transform>
+
+      <!-- 오른쪽 앞 다리 -->
+      <transform translation="5.5 1 0.8">
+        <shape>
+          <appearance>
+            <material diffuseColor="0.4 0.2 0.1"></material>
+          </appearance>
+          <box size="0.5 2 0.5"></box>
+        </shape>
+      </transform>
+
+      <!-- 왼쪽 뒤 다리 -->
+      <transform translation="-5.5 1 -0.8">
+        <shape>
+          <appearance>
+            <material diffuseColor="0.4 0.2 0.1"></material>
+          </appearance>
+          <box size="0.5 2 0.5"></box>
+        </shape>
+      </transform>
+
+      <!-- 오른쪽 뒤 다리 -->
+      <transform translation="5.5 1 -0.8">
+        <shape>
+          <appearance>
+            <material diffuseColor="0.4 0.2 0.1"></material>
+          </appearance>
+          <box size="0.5 2 0.5"></box>
+        </shape>
+      </transform>
+      </transform>
+
+      <transform translation="0 0 -5">
+        <transform use = "bench"></transform>
+      </transform>
+
+      <transform translation="0 0 -10">
+        <transform use = "bench"></transform>
+      </transform>
+
+      <transform translation="0 0 -15">
+        <transform use = "bench"></transform>
+      </transform>
+
+      <transform translation="0 0 -20">
+        <transform use = "bench"></transform>
+      </transform>
+      </transform>
+
+      <transform center = "0 0 0" rotation = "0 1 0 -1.57" translation="8 0 0">
+      <transform use = "groupBench">
+
+      </transform>
+      </transform>
+
+    </scene>
+  </x3d>
+</body>
+</html>
