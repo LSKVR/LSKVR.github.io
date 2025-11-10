@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>🦋 완전 밀착 나비</title>
+  <script src="https://www.x3dom.org/download/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+  <style>
+    body { 
+      background-color: white;  /* ✅ 배경을 흰색으로 변경 */
+      text-align: center;
+    }
+    x3d { 
+      width: 700px; 
+      height: 500px; 
+      border: none; 
+    }
+  </style>
+</head>
+<body>
+  <h2>🦋 완전 밀착 X3DOM 나비</h2>
+
+  <x3d>
+    <scene>
+      <!-- ✅ X3D 내부 배경도 흰색 -->
+      <background skyColor="1 1 1"></background>
+
+      <!-- 📷 뷰포인트 가까이 -->
+      <Viewpoint position="0 0 2.3"></Viewpoint>
+
+      <!-- ✅ 왼쪽 날개 -->
+      <transform  translation="-0.09 0 0" rotation="1 0 0 -0.5">
+        <shape id = leftWing>
+          <appearance>
+            <imageTexture url="img/leftWing.png"></imageTexture>
+          </appearance>
+          <IndexedFaceSet coordIndex="0 1 2 3 -1" texCoordIndex="0 1 2 3 -1" solid="false">
+            <Coordinate point="-0.5 -0.4 0, 0 -0.4 0, 0 0.4 0, -0.5 0.4 0"></Coordinate>
+            <TextureCoordinate point="0 0, 1 0, 1 1, 0 1"></TextureCoordinate>
+          </IndexedFaceSet>
+        </shape>
+      </transform>
+
+      <!-- ✅ 오른쪽 날개 -->
+      <transform  translation="0.09 0 0" rotation="1 0 0 0.5">
+        <shape id = leftWing>
+          <appearance>
+            <imageTexture url="img/rightWing.png"></imageTexture>
+          </appearance>
+          <IndexedFaceSet coordIndex="0 1 2 3 -1" texCoordIndex="0 1 2 3 -1" solid="false">
+            <Coordinate point="0 -0.4 0, 0.5 -0.4 0, 0.5 0.4 0, 0 0.4 0"></Coordinate>
+            <TextureCoordinate point="0 0, 1 0, 1 1, 0 1"></TextureCoordinate>
+          </IndexedFaceSet>
+        </shape>
+      </transform>
+
+      <!-- ✅ 가운데 몸통 -->
+      <transform translation="0 0 0.02">
+        <shape id = body>
+          <appearance>
+            <imageTexture url="img/body.png"></imageTexture>
+          </appearance>
+          <IndexedFaceSet coordIndex="0 1 2 3 -1" texCoordIndex="0 1 2 3 -1" solid="false">
+            <Coordinate point="-0.08 -0.5 0, 0.08 -0.5 0, 0.08 0.5 0, -0.08 0.5 0"></Coordinate>
+            <TextureCoordinate point="0 0, 1 0, 1 1, 0 1"></TextureCoordinate>
+          </IndexedFaceSet>
+        </shape>
+      </transform>
+
+      
+
+
+    </scene>
+  </x3d>
+</body>
+</html>

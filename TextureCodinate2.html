@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>🦋 완전 밀착 나비 - 수정본</title>
+  <script src="https://www.x3dom.org/download/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css" />
+  <style>
+    body {
+      background-color: white;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      font-family: sans-serif;
+    }
+    x3d {
+      width: 900px;
+      height: 520px;
+      border: none;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <h2>🦋 완전 밀착 X3DOM 나비 (수정된 좌표)</h2>
+
+  <x3d>
+    <scene>
+      <!-- 흰 배경 -->
+      <background skyColor="1 1 1"></background>
+
+      <!-- 카메라(가까이) -->
+      <Viewpoint position="0 0 2.3"></Viewpoint>
+
+      <!-- --- 먼저 재사용할 Shape들 정의 (DEF) --- -->
+      <!-- 왼쪽 날개 모양(정의만) -->
+      <Transform translation="0 0 0">
+        <Shape DEF="LeftWingShape">
+          <Appearance>
+            <ImageTexture url="img/leftWing.png"></ImageTexture>
+          </Appearance>
+          <IndexedFaceSet coordIndex="0 1 2 3 -1"
+                          texCoordIndex="0 1 2 3 -1"
+                          solid="false">
+            <!-- 날개의 로컬 좌표 (wing origin이 몸통 경계에 위치하도록 설계) -->
+            <Coordinate point="-0.5 -0.4 0, 0 -0.4 0, 0 0.4 0, -0.5 0.4 0"></Coordinate>
+            <TextureCoordinate point="0 0, 1 0, 1 1, 0 1"></TextureCoordinate>
+          </IndexedFaceSet>
+        </Shape>
+      </Transform>
+
+      <!-- 오른쪽 날개 모양(정의만) -->
+      <Transform translation="0 0 0">
+        <Shape DEF="RightWingShape">
+          <Appearance>
+            <ImageTexture url="img/rightWing.png"></ImageTexture>
+          </Appearance>
+          <IndexedFaceSet coordIndex="0 1 2 3 -1"
+                          texCoordIndex="0 1 2 3 -1"
+                          solid="false">
+            <Coordinate point="0 -0.4 0, 0.5 -0.4 0, 0.5 0.4 0, 0 0.4 0"></Coordinate>
+            <TextureCoordinate point="0 0, 1 0, 1 1, 0 1"></TextureCoordinate>
+          </IndexedFaceSet>
+        </Shape>
+      </Transform>
+
+      <!-- 몸통 모양(정의만) -->
+      <Transform translation="0 0 0">
+        <Shape DEF="BodyShape">
+          <Appearance>
+            <ImageTexture url="img/body.png"></ImageTexture>
+          </Appearance>
+          <IndexedFaceSet coordIndex="0 1 2 3 -1"
+                          texCoordIndex="0 1 2 3 -1"
+                          solid="false">
+            <Coordinate point="-0.08 -0.5 0, 0.08 -0.5 0, 0.08 0.5 0, -0.08 0.5 0"></Coordinate>
+            <TextureCoordinate point="0 0, 1 0, 1 1, 0 1"></TextureCoordinate>
+          </IndexedFaceSet>
+        </Shape>
+      </Transform>
+
+      <!-- --- 이제 하나의 나비를 조립 (중앙) --- -->
+      <Transform translation="0 0 0">
+        <!-- 왼쪽 날개 (몸통에 밀착: x = -0.09, 살짝 위로 들림) -->
+        <Transform translation="-0.09 0 0" rotation="1 0 0 -0.5">
+          <Shape USE="LeftWingShape"></Shape>
+        </Transform>
+
+        <!-- 오른쪽 날개 (몸통에 밀착: x = +0.09, 살짝 아래로 향함) -->
+        <Transform translation="0.09 0 0" rotation="1 0 0 0.5">
+          <Shape USE="RightWingShape"></Shape>
+        </Transform>
+
+        <!-- 몸통 (약간 앞으로 z=0.02) -->
+        <Transform translation="0 0 0.02">
+          <Shape USE="BodyShape"></Shape>
+        </Transform>
+      </Transform>
+
+      <!-- --- 나비 복제 1: 왼쪽으로 이동된 복제 (좌우 대칭을 유지하려면 wing rotation/center 조정) --- -->
+      <Transform translation="-1.4 0 0">
+        <!-- 전체 복제 그룹(왼쪽) -->
+        <Transform>
+          <Transform translation="-0.09 0 0" rotation="1 0 0 -0.5">
+            <Shape USE="LeftWingShape"></Shape>
+          </Transform>
+          <Transform translation="0.09 0 0" rotation="1 0 0 0.5">
+            <Shape USE="RightWingShape"></Shape>
+          </Transform>
+          <Transform translation="0 0 0.02">
+            <Shape USE="BodyShape"></Shape>
+          </Transform>
+        </Transform>
+      </Transform>
+
+      <!-- --- 나비 복제 2: 오른쪽으로 복제 --- -->
+      <Transform translation="1.4 0 0">
+        <Transform>
+          <Transform translation="-0.09 0 0" rotation="1 0 0 -0.5">
+            <Shape USE="LeftWingShape"></Shape>
+          </Transform>
+          <Transform translation="0.09 0 0" rotation="1 0 0 0.5">
+            <Shape USE="RightWingShape"></Shape>
+          </Transform>
+          <Transform translation="0 0 0.02">
+            <Shape USE="BodyShape"></Shape>
+          </Transform>
+        </Transform>
+      </Transform>
+
+    </scene>
+  </x3d>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>X3DOM 텍스처 예제</title>
+  <script type="text/javascript" src="https://www.x3dom.org/download/x3dom.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://www.x3dom.org/download/x3dom.css">
+  <style>
+    body { background-color: #f0f0f0; text-align: center; }
+    x3d { width: 700px; height: 500px; border: 1px solid #aaa; }
+  </style>
+</head>
+<body>
+
+  <h2>X3DOM 텍스처 예제</h2>
+
+  <x3d>
+    <scene>
+      <!-- 조명 -->
+      <directionalLight direction='-1 -1 -1'></directionalLight>
+
+      <!-- Box -->
+      <transform translation="-6 0 0">
+        <shape>
+          <appearance>
+            <imageTexture url="img/boxImage.png"></imageTexture>
+            <TextureTransform translation="0 0.5" scale = "2 0.5"></TextureTransform>
+          </appearance>
+          <box></box>
+        </shape>
+      </transform>
+
+      <!-- Cone -->
+      <transform translation="-2 0 0">
+        <shape>
+          <appearance>
+            <imageTexture url="img/conImage.png"></imageTexture>
+            <TextureTransform translation="0 0.5" scale = "2 0.5"></TextureTransform>
+          </appearance>
+          <cone></cone>
+        </shape>
+      </transform>
+
+      <!-- Sphere -->
+      <transform translation="2 0 0">
+        <shape>
+          <appearance>
+            <imageTexture url="img/sphereImage.png"></imageTexture>
+            <TextureTransform translation="0 0.5" scale = "2 0.5"></TextureTransform>
+          </appearance>
+          <sphere></sphere>
+        </shape>
+      </transform>
+
+      <!-- Cylinder -->
+      <transform translation="6 0 0">
+        <shape>
+          <appearance>
+            <imageTexture url="img/cylinderImage.png"></imageTexture>
+            <TextureTransform translation="0 0.5" scale = "2 0.5"></TextureTransform>
+          </appearance>
+          <cylinder></cylinder>
+        </shape>
+      </transform>
+    </scene>
+  </x3d>
+
+</body>
+</html>
