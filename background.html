@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>X3DOM 배경과 콘</title>
+  <script src="https://www.x3dom.org/download/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+  <style>
+    body { margin: 0; }
+    x3d { width: 100vw; height: 100vh; display: block; }
+  </style>
+</head>
+<body>
+  <x3d>
+    <scene>
+      <!-- 배경 1 -->
+      <Background id="bg1"
+                  skyAngle="0 0.5 1.57"
+                  skyColor="1 0 0, 0.6 0.6 0.8, 0.4 0.4 0.8"
+                  groundAngle="0.5 1.57"
+                  groundColor="0.2 0.2 0.7, 0.5 0.5 0.5, 0.2 0.2 0.2">
+      </Background>
+
+      <!-- 배경 2 -->
+      <Background id="bg2"
+                  skyAngle="0 1.57 3.14"
+                  skyColor="0 0 0, 0.2 0.2 0.2, 0.4 0.4 0.4">
+      </Background>
+
+      <!-- 중앙 초록색 콘 -->
+      <transform translation="0 0 0">
+        <shape>
+          <appearance>
+            <material diffuseColor="0 1 0"></material>
+          </appearance>
+          <cone height="2" bottomRadius="1"></cone>
+        </shape>
+      </transform>
+    </scene>
+  </x3d>
+</body>
+</html>
