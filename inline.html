@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>X3DOM Viewpoint Switch Example</title>
+  <script src="https://www.x3dom.org/download/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+  <style>
+    body { margin: 0; }
+    .btn-area { padding: 10px; }
+    button { padding: 8px 14px; margin-right: 10px; cursor: pointer; }
+    x3d { width: 100vw; height: 90vh; }
+  </style>
+</head>
+<body>
+
+<div class="btn-area">
+  <button onclick="setView('view01')">View 01 보기</button>
+  <button onclick="setView('view02')">View 02 보기</button>
+  <button onclick="setView('view03')">View 03 보기</button>
+  <button onclick="setView('view04')">View 04 보기</button>
+  <button onclick="setView('view05')">View 05 보기</button>
+  <button onclick="setView('view06')">View 06 보기</button>
+</div>
+
+<x3d>
+  <scene>
+
+    <!-- Viewpoints -->
+    <Viewpoint id="view01" position="0 0 10"></Viewpoint>
+    <Viewpoint id="view02" position="-15 0 0" orientation="0 1 0 -1.57"></Viewpoint>
+    <Viewpoint id="view03" position="0 0 -10" orientation="0 1 0 -3.14"></Viewpoint>
+    <Viewpoint id="view04" position="15 0 0" orientation="0 1 0 1.57"></Viewpoint>
+    <Viewpoint id="view05" position="0 20 5" orientation="1 0 0 -1.57"></Viewpoint>
+    <Viewpoint id="view06" position="0 -20 5" orientation="1 0 0 1.57"></Viewpoint>
+
+    <!-- Inline: bench.x3d 로드 -->
+    <Transform translation="0 2 0">
+      <Inline url='"bench.X3D"'></Inline>
+    </Transform>
+
+      <Transform translation="3 -3 0">
+      <Inline url='"group_bench.X3D"'></Inline>
+    </Transform>
+
+     <!-- Inline: bench.x3d 로드 -->
+
+    <!-- 첫 번째 박스 -->
+    <Transform translation="-2 0 0">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="0.6 0.35 0"></Material>
+        </Appearance>
+        <Box size="2 2 2"></Box>
+      </Shape>
+    </Transform>
+
+    <!-- 두 번째 박스 -->
+    <Transform translation="2 0 0">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="1 0 1"></Material>
+        </Appearance>
+        <Box size="2 2 2"></Box>
+      </Shape>
+    </Transform>
+
+    <!-- 세 번째 콘 -->
+    <Transform translation="0 0 7">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="0 1 1"></Material>
+        </Appearance>
+        <Cone height="2" bottomRadius="0.5"></Cone>
+      </Shape>
+    </Transform>
+
+  </scene>
+</x3d>
+
+<script>
+  function setView(id) {
+    document.getElementById(id).setAttribute("set_bind", "true");
+  }
+</script>
+
+</body>
+</html>

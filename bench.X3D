@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<X3D profile="Interchange" version="3.3"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema-instance"
+     xsd:noNamespaceSchemaLocation="http://www.web3d.org/specifications/x3d-3.3.xsd">
+
+  <Scene>
+
+    <!-- 벤치 모델 -->
+    <Transform>
+
+      <!-- 좌판 -->
+      <Transform translation="0 0.6 0">
+        <Shape>
+          <Appearance>
+            <Material diffuseColor="0.7 0.4 0.1"></Material>
+          </Appearance>
+          <Box size="4 0.2 1"></Box>
+        </Shape>
+      </Transform>
+
+      <!-- 등받이 -->
+      <Transform translation="0 1.2 -0.4">
+        <Shape>
+          <Appearance>
+            <Material diffuseColor="0.7 0.4 0.1"></Material>
+          </Appearance>
+          <Box size="4 0.6 0.2"></Box>
+        </Shape>
+      </Transform>
+
+      <!-- 다리 4개 -->
+      <Transform>
+        <!-- 앞 왼쪽 -->
+        <Transform translation="-1.8 0.3 0.4">
+          <Shape>
+            <Appearance><Material diffuseColor="0.3 0.3 0.3"></Material></Appearance>
+            <Box size="0.2 0.6 0.2"></Box>
+          </Shape>
+        </Transform>
+
+        <!-- 앞 오른쪽 -->
+        <Transform translation="1.8 0.3 0.4">
+          <Shape>
+            <Appearance><Material diffuseColor="0.3 0.3 0.3"></Material></Appearance>
+            <Box size="0.2 0.6 0.2"></Box>
+          </Shape>
+        </Transform>
+
+        <!-- 뒤 왼쪽 -->
+        <Transform translation="-1.8 0.3 -0.4">
+          <Shape>
+            <Appearance><Material diffuseColor="0.3 0.3 0.3"></Material></Appearance>
+            <Box size="0.2 0.6 0.2"></Box>
+          </Shape>
+        </Transform>
+
+        <!-- 뒤 오른쪽 -->
+        <Transform translation="1.8 0.3 -0.4">
+          <Shape>
+            <Appearance><Material diffuseColor="0.3 0.3 0.3"></Material></Appearance>
+            <Box size="0.2 0.6 0.2"></Box>
+          </Shape>
+        </Transform>
+      </Transform>
+
+    </Transform>
+
+  </Scene>
+</X3D>
