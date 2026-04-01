@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE X3D PUBLIC "ISO//Web3D//DTD X3D 3.3//EN" "http://www.web3d.org/specifications/x3d-3.3.dtd">
+<X3D profile='Immersive' version='3.3' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance' xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-3.3.xsd'>
+<Scene>
+  <Transform DEF="face" rotation="0 1 0 -1.57">
+    <Transform translation="0 0 -1" scale="2 2.5 1.5">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="1 0.8 0.6"></Material>
+        </Appearance>
+        <Sphere radius="1"></Sphere>
+      </Shape>
+    </Transform>
+
+    <Transform translation="-0.6 0.8 0.5" scale="0.3 0.3 0.3">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="1 1 1"></Material>
+        </Appearance>
+        <Sphere radius="1"></Sphere>
+      </Shape>
+    </Transform>
+
+    <Transform translation="0.6 0.8 0.5" scale="0.3 0.3 0.3">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="1 1 1"></Material>
+        </Appearance>
+        <Sphere radius="1"></Sphere>
+      </Shape>
+    </Transform>
+
+    <Transform translation="0 0.3 0.6" scale="0.2 0.5 0.2">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="1 0.5 0.5"></Material>
+        </Appearance>
+        <Box size="1 1 1"></Box>
+      </Shape>
+    </Transform>
+
+    <Transform translation="0 -0.8 0.6" scale="0.6 0.2 0.2">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="1 0 0"></Material>
+        </Appearance>
+        <Box size="1 1 1"></Box>
+      </Shape>
+    </Transform>
+
+    <Transform translation="-2 0.5 0" scale="0.3 0.6 0.2">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="1 0.8 0.6"></Material>
+        </Appearance>
+        <Sphere radius="1"></Sphere>
+      </Shape>
+    </Transform>
+
+    <Transform translation="2 0.5 0" scale="0.3 0.6 0.2">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="1 0.8 0.6"></Material>
+        </Appearance>
+        <Sphere radius="1"></Sphere>
+      </Shape>
+    </Transform>
+
+    <Transform translation="0 2.5 -1" scale="1 1 1">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="0 0 1"></Material>
+        </Appearance>
+        <Cone bottomRadius="2" height="2"></Cone>
+      </Shape>
+    </Transform>
+  </Transform>
+
+  <Transform translation="-5 0 0" USE="face"></Transform>
+  <Transform translation="5 0 0" USE="face"></Transform>
+</Scene>
+</X3D>

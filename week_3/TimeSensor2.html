@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <script src="https://www.x3dom.org/download/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+  <style>
+    button {
+      font-size: 16px;
+      margin: 5px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    #startButton { background-color: blue; color: white; }
+    #stopButton { background-color: red; color: white; }
+    #info { margin-top: 10px; font-size: 16px; color: white; }
+  </style>
+</head>
+<body style="background-color: black; color:white;">
+
+<!-- 버튼 -->
+<button id="startButton">파란 버튼 (Start)</button>
+<button id="stopButton">빨간 버튼 (Stop)</button>
+
+<div id="info">
+  <p>StartTime: <span id="startTimeDisplay">-</span></p>
+  <p>StopTime: <span id="stopTimeDisplay">-</span></p>
+  <p>현재 시간: <span id="currentTimeDisplay">-</span></p>
+</div>
+
+<X3D width="600px" height="400px">
+  <Scene>
+    <!-- 배경 검정색 -->
+    <Background skyColor='0 0 0'></Background>
+
+    <!-- 빨강 Sphere와 라이트 -->
+    <Transform translation='-2 0 -5'>
+      <DirectionalLight id='dir01' color='1 0 0' direction='0 0 -5' intensity='0'></DirectionalLight>
+      <Shape>
+        <Sphere radius="1"></Sphere>
+        <Appearance>
+          <Material diffuseColor='1 0 0'></Material>
+        </Appearance>
+      </Shape>
+    </Transform>
+
+    <!-- TimeSensor -->
+    <TimeSensor id="time01" loop="true" cycleInterval="1"></TimeSensor>
+
+    <!-- ScalarInterpolator -->
+    <ScalarInterpolator id="blink01" key="0 0.5 1" keyValue="0 1 0"></ScalarInterpolator>
+
+    <!-- ROUTE -->
+    <ROUTE fromNode="time01" fromField="fraction_changed" toNode="blink01" toField="set_fraction"></ROUTE>
+    <ROUTE fromNode="blink01" fromField="value_changed" toNode="dir01" toField="intensity"></ROUTE>
+
+  </Scene>
+</X3D>
+
+<script>
+  const time01 = document.getElementById('time01');
+  const startDisplay = document.getElementById('startTimeDisplay');
+  const stopDisplay = document.getElementById('stopTimeDisplay');
+  const currentDisplay = document.getElementById('currentTimeDisplay');
+
+  // 시간 포맷 함수: yyyy-mm-dd : HH:MM:SS
+  function formatDate(dt) {
+    const yyyy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const hh = String(dt.getHours()).padStart(2, '0');
+    const mi = String(dt.getMinutes()).padStart(2, '0');
+    const ss = String(dt.getSeconds()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd} : ${hh}:${mi}:${ss}`;
+  }
+
+  // 현재 시간 갱신
+  setInterval(() => {
+    const now = new Date();
+    currentDisplay.textContent = formatDate(now);
+  }, 1000);
+
+  // 파란 버튼 클릭 → TimeSensor 재시작
+  document.getElementById('startButton').addEventListener('click', () => {
+    time01.stopTime = 0; // 이전 stopTime 초기화
+    const now = new Date();
+    time01.startTime = now.getTime() / 1000; // TimeSensor start
+    startDisplay.textContent = formatDate(now); // 화면에 표시
+  });
+
+  // 빨간 버튼 클릭 → TimeSensor 정지
+  document.getElementById('stopButton').addEventListener('click', () => {
+    const now = new Date();
+    time01.stopTime = now.getTime() / 1000; // TimeSensor stop
+    stopDisplay.textContent = formatDate(now); // 화면에 표시
+  });
+</script>
+
+</body>
+</html>
