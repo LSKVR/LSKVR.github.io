@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE X3D PUBLIC "ISO//Web3D//DTD X3D 3.3//EN" "http://www.web3d.org/specifications/x3d-3.3.dtd">
+<X3D profile='Immersive' version='3.3' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance' xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-3.3.xsd'>
+<Scene>
+  <viewpoint id="front" position="0 0 30" description="Front View"></viewpoint>    
+  
+  <transform translation="0 0 0" rotation="1 0 0 1.5708">
+    <shape>
+      <appearance>
+        <material diffuseColor="1 0 0"></material>
+      </appearance>
+      <cylinder radius="3" height="25"></cylinder>
+    </shape>
+  </transform>
+
+  <transform translation="10 0 0">
+    <shape>
+      <appearance>
+        <material diffuseColor="0 0 1"></material>
+      </appearance>
+      <cylinder radius="3" height="10"></cylinder>
+    </shape>
+  </transform>
+</Scene>
+</X3D>

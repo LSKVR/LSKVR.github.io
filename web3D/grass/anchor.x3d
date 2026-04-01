@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE X3D PUBLIC "ISO//Web3D//DTD X3D 3.3//EN" "http://www.web3d.org/specifications/x3d-3.3.dtd">
+<X3D profile='Immersive' version='3.3' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance' xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-3.3.xsd'>
+<Scene>
+  <Anchor description='Web3D로 이동할까요?' url="https://www.naver.com" parameter="target=_blank">
+    <Transform translation='-2 0 0'>
+      <Shape>
+        <Box size='2 2 2'></Box>
+        <Appearance>
+          <Material diffuseColor='0.6 0.35 0.0' transparency='0'/>
+        </Appearance>
+      </Shape>
+    </Transform>
+  </Anchor>
+
+  <Anchor description='Group 노드 벤치' url="https://www.naver.com" parameter="target=_blank">
+    <Transform translation='2 0 0'>
+      <Shape>
+        <Box size='2 2 2'></Box>
+        <Appearance>
+          <Material diffuseColor='0 0 1' transparency='0'/>
+        </Appearance>
+      </Shape>
+    </Transform>
+  </Anchor>
+</Scene>
+</X3D>

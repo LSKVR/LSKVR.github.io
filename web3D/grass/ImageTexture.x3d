@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE X3D PUBLIC "ISO//Web3D//DTD X3D 3.3//EN" "http://www.web3d.org/specifications/x3d-3.3.dtd">
+<X3D profile='Immersive' version='3.3' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance' xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-3.3.xsd'>
+<Scene>
+  <directionalLight direction='-1 -1 -1'></directionalLight>
+
+  <transform translation="-6 0 0">
+    <shape>
+      <appearance>
+        <imageTexture url="img/boxImage.png"></imageTexture>
+        <TextureTransform translation="0 0.5" scale = "2 0.5"></TextureTransform>
+      </appearance>
+      <box></box>
+    </shape>
+  </transform>
+
+  <transform translation="-2 0 0">
+    <shape>
+      <appearance>
+        <imageTexture url="img/conImage.png"></imageTexture>
+        <TextureTransform translation="0 0.5" scale = "2 0.5"></TextureTransform>
+      </appearance>
+      <cone></cone>
+    </shape>
+  </transform>
+
+  <transform translation="2 0 0">
+    <shape>
+      <appearance>
+        <imageTexture url="img/sphereImage.png"></imageTexture>
+        <TextureTransform translation="0 0.5" scale = "2 0.5"></TextureTransform>
+      </appearance>
+      <sphere></sphere>
+    </shape>
+  </transform>
+
+  <transform translation="6 0 0">
+    <shape>
+      <appearance>
+        <imageTexture url="img/cylinderImage.png"></imageTexture>
+        <TextureTransform translation="0 0.5" scale = "2 0.5"></TextureTransform>
+      </appearance>
+      <cylinder></cylinder>
+    </shape>
+  </transform>
+</Scene>
+</X3D>

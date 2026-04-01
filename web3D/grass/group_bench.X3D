@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<X3D profile="Interchange" version="3.3"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema-instance"
+     xsd:noNamespaceSchemaLocation="http://www.web3d.org/specifications/x3d-3.3.xsd">
+
+  <Scene>
+
+    <!-- 카메라 -->
+    <Viewpoint position="0 5 50" orientation="1 0 0 -0.2"></Viewpoint>
+
+    <!-- 벤치 한 개 정의 -->
+    <Transform DEF="bench">
+
+      <!-- 좌판 -->
+      <Transform translation="0 2 0">
+        <Shape>
+          <Appearance>
+            <Material diffuseColor="0.55 0.27 0.07"></Material>
+          </Appearance>
+          <Box size="12 0.5 2"></Box>
+        </Shape>
+      </Transform>
+
+      <!-- 등받이 -->
+      <Transform translation="0 3 0.75">
+        <Shape>
+          <Appearance>
+            <Material diffuseColor="0.55 0.27 0.07"></Material>
+          </Appearance>
+          <Box size="12 1 0.5"></Box>
+        </Shape>
+      </Transform>
+
+      <!-- 왼쪽 앞 다리 -->
+      <Transform translation="-5.5 1 0.8">
+        <Shape>
+          <Appearance><Material diffuseColor="0.4 0.2 0.1"></Material></Appearance>
+          <Box size="0.5 2 0.5"></Box>
+        </Shape>
+      </Transform>
+
+      <!-- 오른쪽 앞 다리 -->
+      <Transform translation="5.5 1 0.8">
+        <Shape>
+          <Appearance><Material diffuseColor="0.4 0.2 0.1"></Material></Appearance>
+          <Box size="0.5 2 0.5"></Box>
+        </Shape>
+      </Transform>
+
+      <!-- 왼쪽 뒤 다리 -->
+      <Transform translation="-5.5 1 -0.8">
+        <Shape>
+          <Appearance><Material diffuseColor="0.4 0.2 0.1"></Material></Appearance>
+          <Box size="0.5 2 0.5"></Box>
+        </Shape>
+      </Transform>
+
+      <!-- 오른쪽 뒤 다리 -->
+      <Transform translation="5.5 1 -0.8">
+        <Shape>
+          <Appearance><Material diffuseColor="0.4 0.2 0.1"></Material></Appearance>
+          <Box size="0.5 2 0.5"></Box>
+        </Shape>
+      </Transform>
+
+    </Transform>
+
+    <!-- 벤치 5개 묶음 정의 -->
+    <Transform DEF="groupBench">
+
+      <Transform translation="0 0 0">
+        <Transform USE="bench"></Transform>
+      </Transform>
+
+      <Transform translation="0 0 -5">
+        <Transform USE="bench"></Transform>
+      </Transform>
+
+      <Transform translation="0 0 -10">
+        <Transform USE="bench"></Transform>
+      </Transform>
+
+      <Transform translation="0 0 -15">
+        <Transform USE="bench"></Transform>
+      </Transform>
+
+      <Transform translation="0 0 -20">
+        <Transform USE="bench"></Transform>
+      </Transform>
+
+    </Transform>
+
+    <!-- 벤치 묶음 전체를 오른쪽으로 복사하여 회전 -->
+    <Transform center="0 0 0" rotation="0 1 0 -1.57" translation="8 0 0">
+      <Transform USE="groupBench"></Transform>
+    </Transform>
+
+  </Scene>
+</X3D>

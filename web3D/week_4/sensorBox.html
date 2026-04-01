@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>X3D 3D 텍스트 예제</title>
+<link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+<script src="https://www.x3dom.org/download/x3dom.js"></script>
+</head>
+<body>
+
+<x3d width="800px" height="500px" style="border:1px solid #000;">
+  <scene>
+    <NavigationInfo type='"EXAMINE"' speed="0.5"></NavigationInfo>
+    <Viewpoint position="0 0 15" description="Viewpoint"></Viewpoint>
+
+    <!-- 정육면체 -->
+    <Transform translation="0 0 0">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="0 0 1"></Material>
+        </Appearance>
+        <Box size="2 2 2"></Box>
+      </Shape>
+    </Transform>
+
+    <!-- 시간 표시용 텍스트 -->
+    <Transform translation="-5 4 0">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="1 1 0"></Material>
+        </Appearance>
+        <Text DEF="TimeText" string='["시간: "]'></Text>
+      </Shape>
+    </Transform>
+
+    <!-- 마우스 좌표 표시용 텍스트 -->
+    <Transform translation="-5 3 0">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="0 1 0"></Material>
+        </Appearance>
+        <Text DEF="MouseText" string='["좌표: "]'></Text>
+      </Shape>
+    </Transform>
+
+  </scene>
+</x3d>
+
+<script>
+// X3DOM에서 DEF 노드를 가져올 때는 getElementByName 사용
+const timeText = document.querySelector('Text[DEF="TimeText"]');
+const mouseText = document.querySelector('Text[DEF="MouseText"]');
+
+// 시간 갱신
+function updateTime() {
+  const now = new Date();
+  const t = now.toLocaleTimeString();
+  timeText.setAttribute('string', JSON.stringify([`시간: ${t}`]));
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// 마우스 좌표 갱신
+const x3dEl = document.querySelector('x3d');
+x3dEl.addEventListener('mousemove', (event) => {
+  const rect = x3dEl.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  mouseText.setAttribute('string', JSON.stringify([`좌표: (${x.toFixed(0)}, ${y.toFixed(0)})`]));
+});
+</script>
+
+</body>
+</html>

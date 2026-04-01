@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE X3D PUBLIC "ISO//Web3D//DTD X3D 3.3//EN" "http://www.web3d.org/specifications/x3d-3.3.dtd">
+<X3D profile='Immersive' version='3.3' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance' xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-3.3.xsd'>
+<Scene>
+  <navigationInfo 
+    headlight = 'off'
+    type="walk" 
+    avatarSize="1.8 0.4 0.25" 
+    speed="5"
+    visibilityLimit="10">
+  </navigationInfo>
+
+  <transform translation="0 0 0">
+    <shape>
+      <appearance>
+        <material diffuseColor="1 0 0"></material>
+      </appearance>
+      <box size="2 2 2"></box>
+    </shape>
+  </transform>
+</Scene>
+</X3D>
