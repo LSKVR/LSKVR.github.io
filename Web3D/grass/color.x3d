@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE X3D PUBLIC "ISO//Web3D//DTD X3D 3.3//EN" "http://www.web3d.org/specifications/x3d-3.3.dtd">
+<X3D profile='Immersive' version='3.3' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance' xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-3.3.xsd'>
+<Scene>
+  <Transform translation="-3 0 0">
+    <Shape>
+      <Sphere></Sphere>
+      <Appearance>
+        <Material diffuseColor="0 0 0" specularColor="1 1 1" shineness="0.2"></Material>
+      </Appearance>
+    </Shape>
+  </Transform>
+
+  <Transform translation="-1 0 0">
+    <Shape>
+      <Sphere></Sphere>
+      <Appearance>
+        <Material diffuseColor="0 0 0" emissiveColor="1 0 0" shineness="0.4"></Material>
+      </Appearance>
+    </Shape>
+  </Transform>
+
+  <Transform translation="1 0 0">
+    <Shape>
+      <Sphere></Sphere>
+      <Appearance>
+        <Material diffuseColor="0 1 0" emissiveColor="1 0 0" shineness="0.6"></Material>
+      </Appearance>
+    </Shape>
+  </Transform>
+
+  <Transform translation="3 0 0">
+    <Shape>
+      <Sphere></Sphere>
+      <Appearance>
+        <Material diffuseColor="1 0 0" emissiveColor="0 0 1" specularColor="0 1 0" shineness="1"></Material>
+      </Appearance>
+    </Shape>
+  </Transform>
+
+  <Transform translation="5 0 0">
+    <Shape>
+      <Sphere></Sphere>
+      <Appearance>
+        <Material diffuseColor="1 0 0" emissiveColor="1 1 1" specularColor="0 1 1" shineness="1.0"></Material>
+      </Appearance>
+    </Shape>
+  </Transform>
+</Scene>
+</X3D>

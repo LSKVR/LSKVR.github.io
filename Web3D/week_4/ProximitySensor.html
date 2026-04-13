@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>X3DOM ProximitySensor 실습</title>
+    <script src="https://www.x3dom.org/download/1.8.2/x3dom.js"></script>
+    <link rel="stylesheet" href="https://www.x3dom.org/download/1.8.2/x3dom.css">
+    <style>
+        body { margin: 0; background: #2c3e50; font-family: sans-serif; color: white; }
+        #container { display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        x3d { width: 800px; height: 500px; border: 2px solid #95a5a6; border-radius: 8px; }
+        #log { margin-top: 10px; font-size: 1.2em; color: #f1c40f; }
+        .hint { color: #bdc3c7; font-size: 0.9em; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="container">
+    <h2>X3DOM 근접 센서 테스트</h2>
+    <div class="hint">마우스 휠을 굴려 정육면체에 바짝 다가가 보세요!</div>
+    
+    <x3d>
+        <scene>
+            <viewpoint id="vpp" position="0 0 15" description="Camera"></viewpoint>
+
+            <proximitySensor DEF="mySensor" center="0 0 0" size="6 6 6"></proximitySensor>
+
+            <transform DEF="boxTrafo">
+                <shape>
+                    <appearance>
+                        <material id="boxMat" diffuseColor="1 0 0"></material>
+                    </appearance>
+                    <box size="2 2 2"></box>
+                </shape>
+            </transform>
+            
+            <transform scale="3 3 3">
+                <shape>
+                    <appearance>
+                        <material diffuseColor="1 1 1" transparency="0.8"></material>
+                    </appearance>
+                    <box id="guide" solid="false"></box>
+                </shape>
+            </transform>
+
+            <navigationInfo type='"EXAMINE" "WALK"'></navigationInfo>
+        </scene>
+    </x3d>
+
+    <div id="log">상태: 감지 범위 밖 (멀리 있음)</div>
+</div>
+
+<script>
+    // 센서 노드 선택
+    const sensor = document.querySelector('proximitySensor');
+    const mat = document.getElementById('boxMat');
+    const log = document.getElementById('log');
+
+    // 'isActive' 필드 변화 감지 (사용자가 영역에 들어오거나 나갈 때)
+    sensor.addEventListener('attrchange', function(event) {
+        if (event.attributeName === 'isActive') {
+            const isInside = event.newValue === "true";
+            
+            if (isInside) {
+                mat.setAttribute('diffuseColor', '0 1 0'); // 초록색
+                log.innerText = "상태: 감지 범위 안 (색상 변경!)";
+                log.style.color = "#2ecc71";
+            } else {
+                mat.setAttribute('diffuseColor', '1 0 0'); // 빨간색
+                log.innerText = "상태: 감지 범위 밖 (멀리 있음)";
+                log.style.color = "#f1c40f";
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

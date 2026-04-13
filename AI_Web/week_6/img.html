@@ -1,0 +1,19 @@
+<!Doctype html>
+<html>
+<head>
+    <title>예제3-10 이미지태그</title>
+</head>
+<body>
+    <!-- 현재폴더 -->
+    <img src="ai.png" alt="현재폴더와 같은 위치" width="150px"
+         height="150px" loading="eager">
+    <!-- 하위 폴더 -->
+    <img src="images/ai.png" alt="하위폴더" width="150px" height="150px"
+         loading="eager">
+    <!-- 하위폴더 -->
+    <img src="images/aisoftware.png" alt="하위폴더" width="150px" height="150px"
+         loading="lazy">
+    <img src="../ai.png" alt="상위 폴더 위치" width="150px" height="150px"
+         loading="lazy"><!-- 이미지 로딩 실패시 alt 값 출력 -->
+</body>
+</html>

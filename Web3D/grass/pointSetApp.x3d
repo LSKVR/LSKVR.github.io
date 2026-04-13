@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE X3D PUBLIC "ISO//Web3D//DTD X3D 3.3//EN" "http://www.web3d.org/specifications/x3d-3.3.dtd">
+<X3D profile='Immersive' version='3.3' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance' xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-3.3.xsd'>
+<Scene>
+  <navigationInfo type='"EXAMINE"'></navigationInfo>
+  <viewpoint id="front" position="0 0 20" description="Front View"></viewpoint>    
+
+  <shape>
+    <appearance>
+      <material emissiveColor="1 0.6 0"></material>
+    </appearance>
+    <pointSet pointSize="12">
+      <coordinate point="
+        0  3  3,
+        0  3 -3,
+        0 -3  3,
+        0 -3 -3,
+
+        3  0  3,
+        3  0 -3,
+       -3  0  3,
+       -3  0 -3,
+
+        3  3  0,
+        3 -3  0,
+       -3  3  0,
+       -3 -3  0
+      "></coordinate>
+    </pointSet>
+  </shape>
+</Scene>
+</X3D>

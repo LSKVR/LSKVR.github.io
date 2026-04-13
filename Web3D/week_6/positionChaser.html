@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>PositionChaser와 onmousemove() - Three.js</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #fff; overflow: hidden; font-family: monospace; }
+  h1 {
+    position: absolute; top: 20px; left: 0; right: 0;
+    text-align: center; color: #222; font-size: 1.2rem;
+    letter-spacing: 2px; z-index: 10; pointer-events: none;
+  }
+  #valueC {
+    position: absolute; bottom: 20px; left: 0; right: 0;
+    text-align: center; color: #444; font-size: 0.85rem;
+    z-index: 10; pointer-events: none;
+  }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<h1>PositionChaser와 onmousemove()</h1>
+<p id="valueC"></p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  // Scene setup
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xffffff);
+
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 1, 8);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  document.body.appendChild(renderer.domElement);
+
+  // Lighting
+  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  scene.add(ambient);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(5, 10, 5);
+  scene.add(dirLight);
+
+  // Target cone (white, scale 0.5)
+  const coneMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
+  const coneGeo = new THREE.ConeGeometry(0.5, 1, 32);
+  const cone = new THREE.Mesh(coneGeo, coneMat);
+  cone.scale.set(0.5, 0.5, 0.5);
+  scene.add(cone);
+
+  // Red wall (left, rotated 45deg around Y)
+  const wallGeo = new THREE.BoxGeometry(3, 3, 0.01);
+  const redMat = new THREE.MeshPhongMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+  const redWall = new THREE.Mesh(wallGeo, redMat);
+  redWall.position.set(-2.5, 0, 0);
+  redWall.rotation.y = 0.785;
+  scene.add(redWall);
+
+  // Green wall (right, rotated -45deg around Y)
+  const greenMat = new THREE.MeshPhongMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+  const greenWall = new THREE.Mesh(wallGeo.clone(), greenMat);
+  greenWall.position.set(2.5, 0, 0);
+  greenWall.rotation.y = -0.785;
+  scene.add(greenWall);
+
+  // Blue floor (bottom, rotated around X)
+  const floorGeo = new THREE.BoxGeometry(3, 0.01, 3);
+  const blueMat = new THREE.MeshPhongMaterial({ color: 0x0000ff, side: THREE.DoubleSide });
+  const blueFloor = new THREE.Mesh(floorGeo, blueMat);
+  blueFloor.position.set(0, -2, 0);
+  blueFloor.rotation.x = 0.345;
+  scene.add(blueFloor);
+
+  // Chaser state (smooth interpolation like X3DOM positionChaser/colorChaser)
+  const duration = 1.5; // seconds
+  const chaseSpeed = 1 / duration;
+
+  const currentPos = new THREE.Vector3(0, 0, 0);
+  const targetPos  = new THREE.Vector3(0, -1, 0);
+  const currentColor = new THREE.Color(1, 1, 1);
+  const targetColor  = new THREE.Color(1, 1, 1);
+  const currentRot = new THREE.Quaternion();
+  const targetRot  = new THREE.Quaternion();
+
+  // Raycaster for mouse hit
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  const walls = [redWall, greenWall, blueFloor];
+
+  const valueC = document.getElementById('valueC');
+
+  window.addEventListener('mousemove', (e) => {
+    mouse.x = (e.clientX / window.innerWidth)  * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(walls);
+
+    if (hits.length > 0) {
+      const hit = hits[0];
+      targetPos.copy(hit.point);
+
+      // Set color & rotation based on which wall
+      if (hit.object === redWall) {
+        targetColor.set(0xff0000);
+        targetRot.setFromAxisAngle(new THREE.Vector3(0.86, 0.36, -0.36).normalize(), 1.71);
+      } else if (hit.object === greenWall) {
+        targetColor.set(0x00ff00);
+        targetRot.setFromAxisAngle(new THREE.Vector3(0.86, -0.36, 0.36).normalize(), 1.71);
+      } else if (hit.object === blueFloor) {
+        targetColor.set(0x0000ff);
+        targetRot.setFromAxisAngle(new THREE.Vector3(0, 0, 1), 0);
+      }
+
+      valueC.textContent =
+        `translation: ${targetPos.x.toFixed(2)} ${targetPos.y.toFixed(2)} ${targetPos.z.toFixed(2)}`;
+    }
+  });
+
+  // Animation loop
+  const clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    const delta = clock.getDelta();
+    const alpha = Math.min(delta * (1 / 0.08), 1); // smooth ~80ms lerp
+
+    // Position chase
+    currentPos.lerp(targetPos, alpha * 0.12);
+    cone.position.copy(currentPos);
+
+    // Color chase
+    currentColor.lerp(targetColor, alpha * 0.12);
+    coneMat.color.copy(currentColor);
+
+    // Rotation chase
+    currentRot.slerp(targetRot, alpha * 0.12);
+    cone.quaternion.copy(currentRot);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+</script>
+</body>
+</html>

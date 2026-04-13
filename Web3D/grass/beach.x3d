@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE X3D PUBLIC "ISO//Web3D//DTD X3D 3.3//EN" "http://www.web3d.org/specifications/x3d-3.3.dtd">
+<X3D profile='Immersive' version='3.3' xmlns:xsd='http://www.w3.org/2001/XMLSchema-instance' xsd:noNamespaceSchemaLocation='http://www.web3d.org/specifications/x3d-3.3.xsd'>
+<Scene>
+  <background 
+    backUrl="img/sky_back.jpg"
+    frontUrl="img/sky_front.jpg"
+    leftUrl="img/sky_left.jpg"
+    rightUrl="img/sky_right.jpg"
+    topUrl="img/sky_top.jpg"
+    bottomUrl="img/sky_bottom.jpg">
+  </background>
+
+  <directionalLight direction='-0.4 -1 -0.2' intensity='0.9' color='1 0.98 0.95'></directionalLight>
+  <ambientLight intensity='0.25' color='1 1 1'></ambientLight>
+
+  <viewpoint id="playerView" position="0 2 10" orientation="0 1 0 3.14159"></viewpoint>
+
+  <transform translation="0 0 0">
+    <shape>
+      <appearance>
+        <imageTexture url='img/sand.jpg'></imageTexture>
+        <material specularColor='0.2 0.15 0.1' diffuseColor='1 0.95 0.85'></material>
+      </appearance>
+      <box size='1000 0.2 1000'></box>
+    </shape>
+  </transform>
+
+  <transform translation="0 -0.1 -600">
+    <shape>
+      <appearance>
+        <material diffuseColor='0.02 0.35 0.6' specularColor='0.2 0.5 0.7' shininess='0.4' transparency='0.0'></material>
+      </appearance>
+      <box size='3000 0.1 800'></box>
+    </shape>
+  </transform>
+
+  <group id="envGroup"></group>
+</Scene>
+</X3D>

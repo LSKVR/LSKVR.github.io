@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv='Content-Type' content='text/html;charset=utf-8'></meta>
+<title>이벤트(javascirpt),Web3D,VR,가상현실,X3D,</title>
+<script>
+function changeText(id) {
+    if (id.innerHTML == "Click Text!")  {
+        id.innerHTML = "Web3D"; 
+    }
+    else  {
+        id.innerHTML = "Click Text!";
+
+    }
+   } // 문자 변경
+function displayDate() { 
+    if (document.getElementById("demo").innerHTML == Date()) {
+        document.getElementById("demo").innerHTML = ""
+
+    } else {
+    
+        document.getElementById("demo").innerHTML = Date(); } 
+    }
+//버튼 이벤트
+function myFunction() {
+var x = document.getElementById("name"); //id 'name'을 변수 x에 할당
+x.value = x.value.toUpperCase();}
+ // 사용자가 입력한 소문자를 대문자(toUpperCase)로 변환
+function mOver(obj) { obj.innerHTML = "Welcom Web3D"} //mouseonver
+function mOut(obj) { obj.innerHTML = "마우스를 올리시오."} //mouseout
+function changeR(){ document.getElementById("ht").style.height="100px";} 
+//mousedown 스타일 변경
+function changeM(){ document.getElementById("ht").style.height="20px";} 
+//mouseup 스타일 변경
+</script></head>
+<body>
+<h1 onclick="changeText(this)">Click Text!</h1>
+<div><p id="demo"></p>
+<button onclick="displayDate()">오늘 날짜는?</button></div>
+<p>소문자 영어로 입력하기:
+<input type="text" id="name" onchange="myFunction()"></p>
+<div onmouseover="mOver(this)" onmouseout="mOut(this)" 
+style="Background-color:#00ffff;width:200px;height:20px;padding:20px;">
+마우스를 올리시오.</div>
+<div id="ht" onmousedown="changeR()" onmouseup="changeM()" 
+style="Background-color:magenta;width:200px;height:20px;padding:20px;">
+마우스를 클릭하시오.</div>
+</body></html>
