@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>X3D 카메라 근접 감지 라이트</title>
+<link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+<script src="https://www.x3dom.org/download/x3dom.js"></script>
+<style>
+  body { background: #111; color: #ccc; font-family: sans-serif; padding: 20px; }
+  h3 { margin-bottom: 10px; }
+  x3d { border: 1px solid #444; display: block; }
+  #status {
+    margin-top: 10px;
+    font-size: 1em;
+    padding: 8px 16px;
+    display: inline-block;
+    border-radius: 6px;
+    background: #222;
+    border: 1px solid #444;
+    color: #f1c40f;
+    transition: all 0.3s;
+  }
+  #status.on { color: #fff176; border-color: #f1c40f; background: #332a00; }
+</style>
+</head>
+<body>
+
+<h3>카메라가 Sphere에 가까워지면 DirectionalLight 켜짐 (배경 검은색)</h3>
+
+<x3d id="myX3d" width="800px" height="500px">
+  <scene>
+    <NavigationInfo type='"EXAMINE"' speed="0.5"></NavigationInfo>
+    <Background skyColor="0 0 0"></Background>
+    <Viewpoint DEF="VP" position="0 0 15" description="Viewpoint"></Viewpoint>
+
+    <!-- 구 -->
+    <Transform translation="0 0 0">
+      <Shape>
+        <Appearance>
+          <Material DEF="SphereMat" diffuseColor="1 0 0" emissiveColor="0 0 0"></Material>
+        </Appearance>
+        <Sphere radius="1"></Sphere>
+      </Shape>
+    </Transform>
+
+    <!-- DirectionalLight: 초기 꺼짐 -->
+    <DirectionalLight DEF="DirLight" direction="0 0 -1" on="false" intensity="1.0" color="1 1 1"></DirectionalLight>
+
+    <!-- ProximitySensor: 크기 6x6x6, 원점 중심 -->
+    <ProximitySensor DEF="PS" size="6 6 6" center="0 0 0" enabled="true"></ProximitySensor>
+
+    <!-- ROUTE: PS.isActive → DirLight.on -->
+    <ROUTE fromNode="PS" fromField="isActive" toNode="DirLight" toField="on"></ROUTE>
+
+  </scene>
+</x3d>
+
+<div id="status">💡 라이트: 꺼짐 — 카메라를 Sphere 쪽으로 줌인하세요</div>
+
+<p style="margin-top:10px; color:#777; font-size:0.9em;">
+  마우스 휠로 줌인 → 파란 감지 범위(6×6×6) 안으로 들어오면 DirectionalLight가 켜집니다.
+</p>
+
+<script>
+// X3DOM ROUTE가 isActive를 DirLight.on에 연결하지만,
+// 상태 표시 UI도 동기화하기 위해 폴링으로 카메라 위치를 확인합니다.
+window.addEventListener('load', function() {
+  var x3dEl = document.getElementById('myX3d');
+  var statusEl = document.getElementById('status');
+  var mat = document.querySelector('[DEF="SphereMat"]');
+  var lastState = null;
+
+  function poll() {
+    try {
+      var rt = x3dEl.runtime;
+      if (!rt) return;
+
+      var vm = rt.viewMatrix();
+      // viewMatrix 역행렬에서 카메라 월드 위치 추출
+      var cx = -(vm[0]*vm[12] + vm[1]*vm[13] + vm[2]*vm[14]);
+      var cy = -(vm[4]*vm[12] + vm[5]*vm[13] + vm[6]*vm[14]);
+      var cz = -(vm[8]*vm[12] + vm[9]*vm[13] + vm[10]*vm[14]);
+
+      var half = 3.0; // size="6 6 6" → 반 크기
+      var inside = Math.abs(cx) < half && Math.abs(cy) < half && Math.abs(cz) < half;
+
+      if (inside !== lastState) {
+        lastState = inside;
+        if (inside) {
+          statusEl.textContent = '💡 라이트: 켜짐 — DirectionalLight ON!';
+          statusEl.classList.add('on');
+          // emissive로 구가 약간 빛나 보이게
+          if (mat) mat.setAttribute('emissiveColor', '0.2 0 0');
+        } else {
+          statusEl.textContent = '💡 라이트: 꺼짐 — 카메라를 Sphere 쪽으로 줌인하세요';
+          statusEl.classList.remove('on');
+          if (mat) mat.setAttribute('emissiveColor', '0 0 0');
+        }
+      }
+    } catch(e) {}
+  }
+
+  setInterval(poll, 100);
+});
+</script>
+
+</body>
+</html>

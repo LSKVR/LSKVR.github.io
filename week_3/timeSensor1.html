@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <script src="https://www.x3dom.org/download/x3dom.js"></script>
+  <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
+</head>
+<body style="background:black;">
+
+<X3D width="600px" height="400px">
+  <Scene>
+    <Background skyColor='0 0 0'></Background>
+
+    <!-- 구 1: 빨간 공 -->
+    <Transform translation='-2 0 -5'>
+      <Shape DEF='sphere1'>
+        <Sphere radius="1"></Sphere>
+        <Appearance>
+          <Material diffuseColor='1 0 0' emissiveColor='1 0 0'></Material>
+        </Appearance>
+      </Shape>
+    </Transform>
+
+    <!-- 구 2: 파란 공 -->
+    <Transform translation='2 0 -5'>
+      <Shape DEF='sphere2'>
+        <Sphere radius="1"></Sphere>
+        <Appearance>
+          <Material diffuseColor='0 0.3 1' emissiveColor='0 0.3 1'></Material>
+        </Appearance>
+      </Shape>
+    </Transform>
+
+  </Scene>
+</X3D>
+
+<script>
+(function() {
+  var cycleInterval = 2000; // TimeSensor cycleInterval: 2초
+  var startTime = null;
+  var sphere1Visible = true;
+  var sphere2Visible = false;
+
+  function getSphere(def) {
+    return document.querySelector('Shape[DEF="' + def + '"]') ||
+           document.querySelector('shape[def="' + def + '"]');
+  }
+
+  function setVisible(def, visible) {
+    var shape = getSphere(def);
+    if (!shape) return;
+    var mat = shape.querySelector('Material, material');
+    if (!mat) return;
+    if (visible) {
+      if (def === 'sphere1') {
+        mat.setAttribute('emissiveColor', '1 0 0');
+        mat.setAttribute('diffuseColor',  '1 0 0');
+      } else {
+        mat.setAttribute('emissiveColor', '0 0.3 1');
+        mat.setAttribute('diffuseColor',  '0 0.3 1');
+      }
+      mat.setAttribute('transparency', '0');
+    } else {
+      mat.setAttribute('emissiveColor', '0 0 0');
+      mat.setAttribute('diffuseColor',  '0 0 0');
+      mat.setAttribute('transparency', '1');
+    }
+  }
+
+  // TimeSensor: fraction_changed (0~1) 기반으로 ON/OFF 전환
+  function tick(timestamp) {
+    if (!startTime) startTime = timestamp;
+    var elapsed = timestamp - startTime;
+
+    var fraction1 = (elapsed % cycleInterval) / cycleInterval;
+    var fraction2 = ((elapsed + cycleInterval / 2) % cycleInterval) / cycleInterval;
+
+    var v1 = fraction1 < 0.5;
+    var v2 = fraction2 < 0.5;
+
+    if (v1 !== sphere1Visible) {
+      sphere1Visible = v1;
+      setVisible('sphere1', v1);
+    }
+    if (v2 !== sphere2Visible) {
+      sphere2Visible = v2;
+      setVisible('sphere2', v2);
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  function init() {
+    var s1 = getSphere('sphere1');
+    if (!s1) { setTimeout(init, 200); return; }
+    setVisible('sphere1', true);
+    setVisible('sphere2', false);
+    requestAnimationFrame(tick);
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>

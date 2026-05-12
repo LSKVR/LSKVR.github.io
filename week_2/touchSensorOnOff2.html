@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TouchSensor,Web3D,VR,가상현실,X3D</title>
+
+<script src="https://code.jquery.com/jquery-1.7.2.js"></script>
+<script src="https://www.x3dom.org/x3dom/release/x3dom.js"></script>
+<link rel="stylesheet" href="https://www.x3dom.org/x3dom/release/x3dom.css"/>
+
+<style>
+#coord{
+position:absolute;
+left:10px;
+bottom:10px;
+background:#eeeeee;
+padding:10px;
+font-size:14px;
+}
+</style>
+
+</head>
+
+<body id='main'>
+<h1 style="text-align:center;">TouchSensor2</h1>
+
+<div id="coord">
+왼쪽공 : (-2 , 0 , 0)<br>
+오른쪽공 : (2 , 0 , 0)
+</div>
+
+<X3D width="600px" height="400px">
+<Scene>
+
+<NavigationInfo headlight='false' type='"walk" "Any"'></NavigationInfo>
+
+<Background skyAngle='0 3.14'
+skyColor='.8 .8 .8 0.6 0.6 0.6'></Background>
+
+<DirectionalLight id='direct01'
+direction='0 -10 0'
+color='1 1 1'
+on='false'></DirectionalLight>
+
+<DirectionalLight id='direct02'
+direction='-10 0 0'
+color='1 1 1'
+on='false'></DirectionalLight>
+
+<!-- TimeSensor 추가 -->
+<TimeSensor DEF="clock1" cycleInterval="1" loop="false"></TimeSensor>
+<TimeSensor DEF="clock2" cycleInterval="1" loop="false"></TimeSensor>
+
+<!-- 오른쪽 공 -->
+<Transform id="rightBall" DEF="rightBall" translation='2 0 0'>
+<Shape>
+<Sphere></Sphere>
+<Appearance>
+<Material diffuseColor='1 0 0'></Material>
+</Appearance>
+</Shape>
+<TouchSensor DEF="touch01"></TouchSensor>
+</Transform>
+
+<!-- 왼쪽 공 -->
+<Transform id="leftBall" DEF="leftBall" translation='-2 0 0'>
+<Shape>
+<Sphere></Sphere>
+<Appearance>
+<Material diffuseColor='0 0 1'></Material>
+</Appearance>
+</Shape>
+<TouchSensor DEF="touch02"></TouchSensor>
+</Transform>
+
+<!-- 조명 -->
+<ROUTE fromNode='touch01' fromField='isOver' toNode='direct01' toField='on'></ROUTE>
+<ROUTE fromNode='touch02' fromField='isActive' toNode='direct02' toField='on'></ROUTE>
+
+<!-- 이동 -->
+<PositionInterpolator DEF="moveRight"
+key="0 1"
+keyValue="2 0 0  2 2 0"></PositionInterpolator>
+
+<PositionInterpolator DEF="moveLeft"
+key="0 1"
+keyValue="-2 0 0  -2 1 0"></PositionInterpolator>
+
+<!-- 수정된 ROUTE (핵심) -->
+<ROUTE fromNode="touch01" fromField="touchTime"
+toNode="clock1" toField="startTime"></ROUTE>
+
+<ROUTE fromNode="clock1" fromField="fraction_changed"
+toNode="moveRight" toField="set_fraction"></ROUTE>
+
+<ROUTE fromNode="moveRight" fromField="value_changed"
+toNode="rightBall" toField="translation"></ROUTE>
+
+<ROUTE fromNode="touch02" fromField="touchTime"
+toNode="clock2" toField="startTime"></ROUTE>
+
+<ROUTE fromNode="clock2" fromField="fraction_changed"
+toNode="moveLeft" toField="set_fraction"></ROUTE>
+
+<ROUTE fromNode="moveLeft" fromField="value_changed"
+toNode="leftBall" toField="translation"></ROUTE>
+
+</Scene>
+</X3D>
+
+<script>
+function updateCoord(){
+    var left=document.getElementById("leftBall")._x3domNode._vf.translation;
+    var right=document.getElementById("rightBall")._x3domNode._vf.translation;
+
+    document.getElementById("coord").innerHTML=
+    "왼쪽공 : ("+left.x+" , "+left.y+" , "+left.z+")<br>"+
+    "오른쪽공 : ("+right.x+" , "+right.y+" , "+right.z+")";
+}
+setInterval(updateCoord,100);
+</script>
+
+</body>
+</html>

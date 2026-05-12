@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv='Content-Type' content='text/html;charset=utf-8'></meta>
+<title>ColorInterpolator,Web3D,VR,가상현실,X3D,</title>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.7.2.js"></script>
+<script type='text/javascript' src="http://www.x3dom.org/x3dom/release/x3dom.js"></script>
+<link rel='stylesheet' type='text/css' href="http://www.x3dom.org/x3dom/release/x3dom.css"/>
+</head>
+<body id='main'>
+<h1 style="text-align:center;">ColorInterpolator</h1>
+
+<!-- 토글 버튼 -->
+<div style="text-align:center; margin-bottom: 10px;">
+  <button id="toggleBtn" onclick="toggleInterpolator()"
+    style="padding:8px 24px; font-size:15px; cursor:pointer;">
+    ▶ 인터폴레이터 시작
+  </button>
+</div>
+
+<X3D><Scene>
+  <NavigationInfo headlight='true' type='"examine" "Any"'></NavigationInfo>
+  <Background skyAngle='0 3.14' skyColor='.8 .8 .8 0.6 0.6 0.6'></Background>
+  <Transform translation='0 0 0'>
+    <Shape>
+      <Sphere radius='1'></Sphere>
+      <Appearance>
+        <Material id='color' diffuseColor='1 1 0'></Material>
+      </Appearance>
+    </Shape>
+  </Transform>
+  <ColorInterpolator id='clrint' key='0 0.25 0.5 0.75 1'
+    keyvalue='1 0 1, 1 1 0, 1 0 0, 0 1 0, 0 1 1'>
+  </ColorInterpolator>
+  <!-- 기본값: enabled='false' → 인터폴레이터 해제 상태 -->
+  <TimeSensor id='time' loop='true' cycleInterval='4' enabled='false'></TimeSensor>
+  <ROUTE fromNode='time' fromField='fraction_changed'
+    toNode='clrint' toField='set_fraction'></ROUTE>
+  <ROUTE fromNode='clrint' fromField='value_changed'
+    toNode='color' toField='diffuseColor'></ROUTE>
+</Scene></X3D>
+
+<script>
+let isRunning = false;
+
+function toggleInterpolator() {
+  const timeSensor = document.getElementById('time');
+  const btn = document.getElementById('toggleBtn');
+
+  if (!isRunning) {
+    timeSensor.setAttribute('enabled', 'true');
+    btn.textContent = '⏹ 인터폴레이터 해제';
+  } else {
+    timeSensor.setAttribute('enabled', 'false');
+    btn.textContent = '▶ 인터폴레이터 시작';
+  }
+  isRunning = !isRunning;
+}
+</script>
+</body>
+</html>

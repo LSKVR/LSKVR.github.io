@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>X3D Click Game</title>
+<script type='text/javascript' src="http://www.x3dom.org/x3dom/release/x3dom.js"></script>
+<link rel='stylesheet' type='text/css' href="http://www.x3dom.org/x3dom/release/x3dom.css"/>
+<style>
+#score { font-size:20px; margin:10px; }
+#gameButtons { margin:10px; }
+</style>
+<script>
+let score = 0;
+
+// Sphere 클릭 시 점수 증가 + 위치 변경
+function sphereClick() {
+    score++;
+    document.getElementById('score').textContent = "Score: " + score;
+
+    const sphereTransform = document.getElementById('sphereTrans');
+    const x = (Math.random() * 10 - 5).toFixed(2);
+    const y = (Math.random() * 5 + 0.5).toFixed(2);
+    const z = (Math.random() * 10 - 5).toFixed(2);
+    sphereTransform.setAttribute('translation', `${x} ${y} ${z}`);
+}
+
+// 게임 초기화
+function resetGame() {
+    score = 0;
+    document.getElementById('score').textContent = "Score: " + score;
+    document.getElementById('sphereTrans').setAttribute('translation', `0 1 0`);
+}
+</script>
+</head>
+<body>
+
+<h1 style="text-align:center;">X3D Click Game</h1>
+<div id="score">Score: 0</div>
+<div id="gameButtons">
+    <input type="button" value="Reset Game" onclick="resetGame();">
+</div>
+
+<X3D width="600px" height="400px">
+<Scene>
+  <NavigationInfo type='"EXAMINE" "ANY"'></NavigationInfo>
+  <Background skyColor='0.7 0.9 1'></Background>
+  <DirectionalLight direction='0 -10 -10' color='1 1 1'></DirectionalLight>
+
+  <!-- Sphere Transform -->
+  <Transform id='sphereTrans' translation='0 1 0'>
+    <Shape>
+      <Sphere></Sphere>
+      <Appearance>
+        <Material diffuseColor='1 0 0'></Material>
+      </Appearance>
+    </Shape>
+    <TouchSensor DEF='touchSphere' description='Click the Sphere'></TouchSensor>
+  </Transform>
+</Scene>
+</X3D>
+
+<script>
+// X3DOM TouchSensor 클릭 이벤트 연결
+const touchSensor = document.getElementById('sphereTrans').querySelector('TouchSensor');
+touchSensor.addEventListener('click', sphereClick);
+</script>
+
+</body>
+</html>

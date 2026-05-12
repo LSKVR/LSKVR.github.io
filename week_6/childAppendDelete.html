@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv='Content-Type' content='text/html;charset=utf-8'></meta>
+<script type="text/javascript" src="https://code.jquery.com/jquery-1.7.2.js"></script>
+<script type="text/javascript" src="https://www.x3dom.org/x3dom/release/x3dom.js"></script>
+<link rel='stylesheet' type='text/css' href="https://www.x3dom.org/x3dom/release/x3dom.css"/>
+<title>appendChild(), removeChild(),Web3D,VR,가상현실,X3D,</title>
+<script>
+function addNode() {
+x = Math.random().toFixed(1)*10-5;
+y = Math.random().toFixed(1)*5-2.5;
+z = Math.random().toFixed(1)*10-5;
+var tr = document.createElement('Transform'); //Transform node
+tr.setAttribute("translation", x + " " + y + " " + z );
+tr.setAttribute('scale','.3 .3 .3');
+var sh = document.createElement('Shape'); // Shape node
+var app = document.createElement('Appearance');// Appearance Node
+var mat = document.createElement('Material');
+        // Material Node
+        app.appendChild(mat);
+        sh.appendChild(app); tr.appendChild(sh);
+        var bx = document.createElement('Box');
+        sh.appendChild(bx);
+var sc = document.getElementById('trans');
+        sc.appendChild(tr);
+        document.getElementById('valueC').innerHTML =
+        tr.getAttribute('translation');
+        return false ;
+};
+function removeNode() {
+        var rm = document.getElementById('trans');
+        for (var i = 0; i < rm.childNodes.length; i++) {
+// check if we have a real X3DOM Node; not just e.g. a Text-tag
+        if (rm.childNodes[i].nodeType === Node.ELEMENT_NODE) {
+        rm.removeChild(rm.childNodes[i]);
+        break;
+        } }
+};
+</script>
+</head>
+<body id='main'>
+<h1 style="text-align:center;">appendChild(), removeChild()</h1>
+<input type="button" id="add" value="추가노드" onclick="addNode();">
+<input type="button" id="remove" value="삭제노드" onclick="removeNode();">
+<p id='valueC' style="text-align:center;"></p>
+<X3D> <!-- showStat='true' showLog='true' -->
+<Scene>
+<Transform id='trans' translation='0 0 0'>
+<Shape><Box size='2 2 2'></Box>
+<Appearance><Material id='mat' diffuseColor='1 0 0'></Material>
+</Appearance>
+</Shape></Transform>
+</Scene>
+</X3D>
+</body>
+</html>

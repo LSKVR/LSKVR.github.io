@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>X3DOM ProximitySensor 실습</title>
+    <script src="https://www.x3dom.org/download/1.8.2/x3dom.js"></script>
+    <link rel="stylesheet" href="https://www.x3dom.org/download/1.8.2/x3dom.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #1a1f2e;
+            font-family: 'Segoe UI', sans-serif;
+            color: #e0e6f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 20px;
+            min-height: 100vh;
+        }
+        h2 {
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #c8d8f0;
+            letter-spacing: 0.5px;
+        }
+        .hint {
+            font-size: 0.88em;
+            color: #7a8aaa;
+            margin-bottom: 16px;
+        }
+        x3d {
+            width: 820px;
+            height: 500px;
+            border: 1.5px solid #2e3a52;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        #log {
+            margin-top: 16px;
+            font-size: 1.1em;
+            font-weight: 500;
+            padding: 10px 28px;
+            border-radius: 8px;
+            background: #222940;
+            border: 1px solid #2e3a52;
+            color: #f1c40f;
+            transition: color 0.3s, border-color 0.3s, background 0.3s;
+        }
+        #log.inside {
+            color: #2ecc71;
+            border-color: #1a6640;
+            background: #162a20;
+        }
+        .controls {
+            margin-top: 14px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 20px;
+            border-radius: 6px;
+            border: 1px solid #3a4a6a;
+            background: #222940;
+            color: #c0d0f0;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+        button:hover { background: #2e3a58; }
+        .legend {
+            margin-top: 12px;
+            display: flex;
+            gap: 18px;
+            font-size: 0.82em;
+            color: #7a8aaa;
+        }
+        .legend span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dot {
+            width: 11px; height: 11px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<h2>X3DOM 근접 센서 테스트</h2>
+<div class="hint">마우스 휠로 줌 · 드래그로 회전 — 파란 영역 안으로 들어가 보세요!</div>
+
+<x3d id="x3dElem">
+    <scene>
+        <viewpoint id="vp" position="0 0 15" description="Camera"></viewpoint>
+        <navigationInfo type='"EXAMINE"' headlight="true"></navigationInfo>
+
+        <!-- 근접 센서: 중심 원점, 6x6x6 범위 -->
+        <proximitySensor
+            id="mySensor"
+            DEF="mySensor"
+            center="0 0 0"
+            size="6 6 6"
+            enabled="true">
+        </proximitySensor>
+
+        <!-- 조명 -->
+        <directionalLight direction="-1 -1 -1" intensity="0.6"></directionalLight>
+        <directionalLight direction="1 0.5 1" intensity="0.3"></directionalLight>
+
+        <!-- 중앙 정육면체 -->
+        <transform DEF="boxTrafo">
+            <shape>
+                <appearance>
+                    <material id="boxMat"
+                        diffuseColor="0.88 0.29 0.29"
+                        specularColor="0.5 0.5 0.5"
+                        shininess="0.6">
+                    </material>
+                </appearance>
+                <box id="mainBox" size="2 2 2"></box>
+            </shape>
+        </transform>
+
+        <!-- 감지 범위 시각화 (반투명 파란 박스) -->
+        <transform>
+            <shape>
+                <appearance>
+                    <material diffuseColor="0.2 0.5 1.0"
+                        transparency="0.82"
+                        specularColor="0 0 0">
+                    </material>
+                </appearance>
+                <box size="6 6 6" solid="false"></box>
+            </shape>
+        </transform>
+
+        <!-- 배경 -->
+        <background skyColor="0.08 0.10 0.16"></background>
+    </scene>
+</x3d>
+
+<div id="log">상태: 감지 범위 밖 (멀리 있음)</div>
+
+<div class="controls">
+    <button onclick="resetCamera()">카메라 초기화</button>
+    <button onclick="zoomIn()">범위 안으로 이동</button>
+</div>
+
+<div class="legend">
+    <span><span class="dot" style="background:#4477dd;opacity:0.6;"></span>감지 범위 (6×6×6)</span>
+    <span><span class="dot" style="background:#e04b4b;"></span>범위 밖 색상</span>
+    <span><span class="dot" style="background:#2ecc71;"></span>범위 안 색상</span>
+</div>
+
+<script>
+// X3DOM이 완전히 로드된 후 실행
+document.addEventListener('DOMContentLoaded', function() {
+    // x3dom 런타임 로드 대기
+    function init() {
+        const sensor = document.getElementById('mySensor');
+        const mat = document.getElementById('boxMat');
+        const log = document.getElementById('log');
+
+        if (!sensor || !mat) {
+            setTimeout(init, 300);
+            return;
+        }
+
+        // --- 방법 1: X3DOM 필드 이벤트 (enterTime / exitTime 필드 변화 감지) ---
+        // proximitySensor는 isActive 필드가 변할 때 출력 이벤트를 냄
+        // x3dom에서는 outputchange 이벤트로 감지
+
+        sensor.addEventListener('outputchange', function(e) {
+            if (e.fieldName === 'isActive') {
+                const isInside = e.value;
+                updateState(isInside, mat, log);
+            }
+        });
+
+        // --- 방법 2: 폴링 폴백 (outputchange가 안 될 경우 대비) ---
+        // x3dom 런타임을 통해 카메라 위치와 센서 범위를 직접 비교
+        let lastState = false;
+
+        setInterval(function() {
+            try {
+                const vp = document.getElementById('vp');
+                if (!vp) return;
+
+                // 현재 뷰포인트(카메라)의 월드 위치 가져오기
+                const runtime = document.getElementById('x3dElem').runtime;
+                if (!runtime) return;
+
+                const viewMat = runtime.viewMatrix();
+                // viewMatrix의 역행렬로 카메라 위치 추출
+                // viewMatrix: world->camera, 역행렬의 translation = 카메라 월드 위치
+                const m = viewMat;
+                // 역행렬 translation 추출 (회전 전치 * -t)
+                const cx = -(m[0]*m[12] + m[1]*m[13] + m[2]*m[14]);
+                const cy = -(m[4]*m[12] + m[5]*m[13] + m[6]*m[14]);
+                const cz = -(m[8]*m[12] + m[9]*m[13] + m[10]*m[14]);
+
+                // 센서 범위 center="0 0 0" size="6 6 6" → 반 크기 3
+                const half = 3.0;
+                const nowInside = Math.abs(cx) < half &&
+                                  Math.abs(cy) < half &&
+                                  Math.abs(cz) < half;
+
+                if (nowInside !== lastState) {
+                    lastState = nowInside;
+                    updateState(nowInside, mat, log);
+                }
+            } catch(err) {}
+        }, 100);
+    }
+
+    function updateState(isInside, mat, log) {
+        if (isInside) {
+            mat.setAttribute('diffuseColor', '0.18 0.80 0.44');
+            log.textContent = '상태: 감지 범위 안 — 색상이 초록으로 변경됨!';
+            log.classList.add('inside');
+        } else {
+            mat.setAttribute('diffuseColor', '0.88 0.29 0.29');
+            log.textContent = '상태: 감지 범위 밖 (멀리 있음)';
+            log.classList.remove('inside');
+        }
+    }
+
+    // x3dom 로드 완료 이벤트
+    if (window.x3dom) {
+        x3dom.runtime ? init() : setTimeout(init, 500);
+    } else {
+        document.getElementById('x3dElem').addEventListener('load', init);
+        setTimeout(init, 800);
+    }
+});
+
+function resetCamera() {
+    const vp = document.getElementById('vp');
+    if (vp) {
+        vp.setAttribute('position', '0 0 15');
+        vp.setAttribute('orientation', '0 0 1 0');
+        try {
+            document.getElementById('x3dElem').runtime.resetView();
+        } catch(e) {}
+    }
+}
+
+function zoomIn() {
+    // 카메라를 범위 안(z=2)으로 부드럽게 이동
+    const vp = document.getElementById('vp');
+    if (vp) {
+        vp.setAttribute('position', '0 0 2');
+    }
+    try {
+        const rt = document.getElementById('x3dElem').runtime;
+        rt.viewMatrix();
+    } catch(e) {}
+}
+</script>
+
+</body>
+</html>
