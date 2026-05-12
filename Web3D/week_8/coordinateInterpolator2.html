@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CoordinateInterpolator</title>
+<script src="https://www.x3dom.org/x3dom/release/x3dom.js"></script>
+<link rel="stylesheet" href="https://www.x3dom.org/x3dom/release/x3dom.css">
+</head>
+
+<body>
+<h1 style="text-align:center;">CoordinateInterpolator</h1>
+
+<!-- 토글 버튼 -->
+<div style="text-align:center; margin-bottom:10px;">
+  <button id="toggleBtn" onclick="toggleInterpolator()"
+    style="padding:8px 24px; font-size:15px; cursor:pointer;">
+    ▶ 인터폴레이터 시작
+  </button>
+</div>
+
+<X3D width="600px" height="400px">
+<Scene>
+
+<NavigationInfo headlight="true" type='"examine" "any"'></NavigationInfo>
+<Background skyAngle="0 3.14" skyColor=".8 .8 .8 0.6 0.6 0.6"></Background>
+
+<Transform>
+<Shape>
+<IndexedFaceSet coordIndex="0 1 2 3 -1" solid="true">
+<Coordinate id="coord" point="-1 -1 0  1 -1 0  1 1 0  -1 1 0"></Coordinate>
+</IndexedFaceSet>
+<Appearance>
+<Material diffuseColor="1 1 0"></Material>
+</Appearance>
+</Shape>
+</Transform>
+
+<CoordinateInterpolator id="coordint"
+key="0 0.25 0.5 0.75 1"
+keyValue="
+-1 -1 0  1 -1 0  1 1 0  -1 1 0
+-2 -1 0  1 -1 0  1 1 0  -1 1 0
+-2 -1 0  1 -2 0  1 2 0  -1 1 0
+-2 -1 0  1 -2 0  3 2 0  -3 1 0
+-2 -2 0  1 -2 0  3 3 0  -3 1 0">
+</CoordinateInterpolator>
+
+<!-- 기본값: enabled="false" → 해제 상태로 시작 -->
+<TimeSensor id="time" loop="true" cycleInterval="4" enabled="false"></TimeSensor>
+
+<ROUTE fromNode="time" fromField="fraction_changed"
+toNode="coordint" toField="set_fraction"></ROUTE>
+
+<ROUTE fromNode="coordint" fromField="value_changed"
+toNode="coord" toField="point"></ROUTE>
+
+</Scene>
+</X3D>
+
+<script>
+let isRunning = false;
+
+function toggleInterpolator() {
+  const timeSensor = document.getElementById('time');
+  const btn = document.getElementById('toggleBtn');
+
+  if (!isRunning) {
+    timeSensor.setAttribute('enabled', 'true');
+    btn.textContent = '⏹ 인터폴레이터 해제';
+  } else {
+    timeSensor.setAttribute('enabled', 'false');
+    btn.textContent = '▶ 인터폴레이터 시작';
+  }
+  isRunning = !isRunning;
+}
+</script>
+
+</body>
+</html>
