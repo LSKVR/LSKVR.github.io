@@ -1,325 +1,1024 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>이상경의 웹페이지</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이상경의 웹페이지</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Syncopate:wght@400;700&display=swap"
+    rel="stylesheet">
 
-<style>
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f4f4f4;
-}
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface2: #1a1a26;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --accent3: #ff6b6b;
+      --text: #e8e8f0;
+      --text-muted: #8888aa;
+      --border: rgba(108, 99, 255, 0.2);
+      --glow: rgba(108, 99, 255, 0.15);
+    }
 
-header {
-    background: #333;
-    color: white;
-    text-align: center;
-    padding: 15px;
-}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-section {
-    padding: 20px;
-    margin: 10px;
-    background: white;
-    border-radius: 10px;
-}
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
 
-h2 {
-    color: #333;
-}
+    /* ── 배경 파티클 ── */
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-ul li::marker {
-    color: black;
-}
+    /* ── 헤더 ── */
+    header {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 20px;
+      overflow: hidden;
+    }
 
-.gallery {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-}
+    .header-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      animation: spin linear infinite;
+    }
 
-.gallery img {
-    width: 120px;
-    border-radius: 10px;
-}
+    .ring1 {
+      width: 300px;
+      height: 300px;
+      animation-duration: 20s;
+    }
 
-.contact {
-    line-height: 1.8;
-}
+    .ring2 {
+      width: 500px;
+      height: 500px;
+      animation-duration: 35s;
+      animation-direction: reverse;
+      border-color: rgba(0, 212, 170, 0.1);
+    }
 
-footer {
-    text-align: center;
-    padding: 10px;
-    color: gray;
-}
-</style>
+    .ring3 {
+      width: 700px;
+      height: 700px;
+      animation-duration: 50s;
+    }
 
+    .ring-dot {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      top: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    .ring2 .ring-dot {
+      background: var(--accent2);
+      box-shadow: 0 0 12px var(--accent2);
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .header-badge {
+      font-family: 'Syncopate', sans-serif;
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--accent2);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.3s forwards;
+    }
+
+    header h1 {
+      font-family: 'Syncopate', sans-serif;
+      font-size: clamp(28px, 5vw, 56px);
+      font-weight: 700;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.5s forwards;
+    }
+
+    .header-sub {
+      font-size: 14px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.7s forwards;
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--text-muted);
+      opacity: 0;
+      animation: fadeIn 1s ease 1.5s forwards;
+    }
+
+    .scroll-line {
+      width: 1px;
+      height: 60px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+      animation: scrollAnim 2s ease infinite;
+    }
+
+    @keyframes scrollAnim {
+      0% {
+        transform: scaleY(0);
+        transform-origin: top;
+      }
+
+      50% {
+        transform: scaleY(1);
+        transform-origin: top;
+      }
+
+      51% {
+        transform: scaleY(1);
+        transform-origin: bottom;
+      }
+
+      100% {
+        transform: scaleY(0);
+        transform-origin: bottom;
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    /* ── 공통 섹션 ── */
+    main {
+      position: relative;
+      z-index: 10;
+    }
+
+    .section {
+      padding: 80px 40px;
+      max-width: 900px;
+      margin: 0 auto;
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .section-label {
+      font-family: 'Syncopate', sans-serif;
+      font-size: 10px;
+      letter-spacing: 5px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 40px;
+      position: relative;
+      display: inline-block;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      width: 40px;
+      height: 2px;
+      background: var(--accent);
+      transition: width 0.4s ease;
+    }
+
+    .section:hover .section-title::after {
+      width: 100%;
+    }
+
+    /* ── 수업 정보 카드 ── */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .info-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .info-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .info-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(108, 99, 255, 0.5);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .info-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .info-card-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .info-card-value {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* ── 수업 파일 탭 ── */
+    .tab-nav {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 6px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 20px rgba(108, 99, 255, 0.4);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* ── 주차 아코디언 ── */
+    .week-group {
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.3s ease;
+    }
+
+    .week-group:hover {
+      border-color: rgba(108, 99, 255, 0.4);
+    }
+
+    .week-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: var(--surface);
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .week-header:hover {
+      background: var(--surface2);
+    }
+
+    .week-header h3 {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--accent2);
+      letter-spacing: 1px;
+    }
+
+    .week-arrow {
+      width: 20px;
+      height: 20px;
+      color: var(--text-muted);
+      transition: transform 0.3s ease;
+    }
+
+    .week-group.open .week-arrow {
+      transform: rotate(180deg);
+    }
+
+    .week-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+      background: var(--bg);
+    }
+
+    .week-group.open .week-body {
+      max-height: 500px;
+    }
+
+    .file-list {
+      padding: 8px 0;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      border-left: 2px solid transparent;
+    }
+
+    .file-item:hover {
+      color: var(--text);
+      background: var(--surface);
+      border-left-color: var(--accent);
+      padding-left: 28px;
+    }
+
+    .file-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      opacity: 0.5;
+      transition: opacity 0.2s ease;
+    }
+
+    .file-item:hover .file-dot {
+      opacity: 1;
+    }
+
+    /* ── 갤러리 ── */
+    .gallery-wrap {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    .gallery-wrap img {
+      width: 100%;
+      display: block;
+      filter: grayscale(30%) brightness(0.8);
+      transition: filter 0.5s ease, transform 0.5s ease;
+    }
+
+    .gallery-wrap:hover img {
+      filter: grayscale(0%) brightness(1);
+      transform: scale(1.03);
+    }
+
+    .gallery-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 20px;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      letter-spacing: 2px;
+    }
+
+    /* ── 내 정보 ── */
+    .profile-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .profile-card::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(108, 99, 255, 0.15), transparent 70%);
+    }
+
+    .profile-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 20px;
+      box-shadow: 0 0 30px rgba(108, 99, 255, 0.4);
+    }
+
+    .profile-name {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .profile-school {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    .profile-items {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .profile-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .profile-item-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .profile-item-value {
+      color: var(--text);
+    }
+
+    /* ── 푸터 ── */
+    footer {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 40px 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-line {
+      width: 40px;
+      height: 1px;
+      background: var(--accent);
+      margin: 12px auto 0;
+    }
+
+    /* ── 구분선 ── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 0 40px;
+    }
+
+    /* ── 링크 hover 효과 없음 (file-item으로 처리) ── */
+    a {
+      color: inherit;
+    }
+  </style>
 </head>
 
 <body>
 
-<header>
-<h1>이상경의 웹프로그래밍 수업 파일</h1>
-</header>
+  <canvas id="bg-canvas"></canvas>
 
-<section>
-<h2>웹3D구현 & AI웹프로그래밍</h2>
-<p>
-1. 웹3D 수업 파일
-</p>
-<p>
-2. AI Web 수업 파일
-</p>
-
-</section>
-
-<section>
-<h2>내 수업정보</h2>
-<ul>
-<li>과목: 웹 3D / AI 웹호스팅</li>
-<li>교수: 박경배</li>
-<li>강의실: 405호 / 407호</li>
-<li>강의시간: 월요일 13:40 / 화요일 10:00</li>
-</ul>
-</section>
-
-<section>
-     <h2 style="color: blue";><b>웹3D 가상현실 수업 실습 파일</b></h2>
-  <div id = grade_2>
-
-    <h2>2학년 최종 실습 파일</h2>
-    <a href = "Web3D/grass/index.html">가상현실(초원) / (방향키로 이동)</a>
-    <hr>
-    <br>
-    <br>
-  </div>
-
-
-  
-  <div id = "grade_3">
-    <h2 >3학년 실습 파일</h2>
-    <div id = "Web3D_week_2">
-      <h3>2주차</h3>
-        <ul>
-          <li>
-            <a href = "Web3D/week_2/touchSensorOnOff.html">터치 센서 1</a>
-          </li>
-        </ul>
-        <ul>
-          <li>
-            <a href = "Web3D/week_2/touchSensorOnOff2.html">터치 센서 2</a>
-          </li>
-        </ul>
-        <br>
+  <!-- ── 헤더 ── -->
+  <header>
+    <div class="header-ring ring1">
+      <div class="ring-dot"></div>
     </div>
-
-      <div id = "Web3D_week_3">
-      <h3>3주차</h3>
-        <ul>
-          <li>
-            <a href = "Web3D/week_3/timeSensor1.html">타임 센서 1</a>
-          </li>
-        </ul>
-        <ul>
-          <li>
-            <a href = "Web3D/week_3/timeSensor2.html">타임 센서 2</a>
-          </li>
-        </ul>
-        <ul>
-          <li>
-            <a href = "Web3D/week_3/dom.html">DOM 객체</a>
-          </li>
-        </ul>
-       
-        <br>
+    <div class="header-ring ring2">
+      <div class="ring-dot"></div>
     </div>
+    <div class="header-ring ring3"></div>
 
-      <div id = "Web3D_week_4">
-      <h3>4주차</h3>
-        <ul>
-          <li>
-            <a href = "Web3D/week_4/ProximitySensor.html">Proximity 센서 1 (브라우저 호환 안됨)</a>
-          </li>
-        </ul>
-        <ul>
-          <li>
-            <a href = "Web3D/week_4/ProximitySensor2.html">Proximity 센서 2 (브라우저 호환 안됨)</a>
-          </li>
-        </ul>
-        <ul>
-          <li>
-            <a href = "Web3D/week_4/sensorBox.html">센서 박스</a>
-          </li>
-        </ul>
-      
-        <br>
+    <div class="header-badge">Web Programming</div>
+    <h1>이상경의<br>웹프로그래밍</h1>
+    <p class="header-sub">Web 3D &nbsp;·&nbsp; AI Web Programming</p>
+
+    <div class="scroll-hint">
+      <span>SCROLL</span>
+      <div class="scroll-line"></div>
     </div>
-  </div>
+  </header>
 
-  <div id = "Web3D_week_5">
-      <h3>5주차</h3>
-        <ul>
-          <li>
-            <a href = "Web3D/week_5/javaScriptEvent.html">자바 스크립트 이벤트</a>
-          </li>
-        </ul>
-        <ul>
-          <li>
-            <a href = "Web3D/week_5/get_set_method.html">색상 변경 토글 메소드</a>
-          </li>
-        </ul>
-        <ul>
-          <li>
-            <a href = "Web3D/week_5/get_set_FieldValue.html">박스 클릭 이동</a>
-          </li>
-        </ul>
-      
-        <br>
-    </div>
-    <div id = "Web3D_week_6">
-      <h3>6주차</h3>
-        <ul>
-          <li>
-            <a href = "Web3D/week_6/childAppendDelete.html">요소 추가 삭제</a>
-          </li>
-        </ul>
-        <ul>
-          <li>
-            <a href = "Web3D/week_6/positionChaser.html">마우스를 따라오는 이벤트</a>
-          </li>
-        </ul>
-      
-        <br>
-    </div>
-  </div>
+  <main>
 
+    <!-- ── 수업 정보 ── -->
+    <div class="divider"></div>
+    <section class="section">
+      <div class="section-label">Course Info</div>
+      <h2 class="section-title">내 수업 정보</h2>
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-card-label">과목</div>
+          <div class="info-card-value">웹 3D</div>
+          <div class="info-card-value" style="margin-top:6px">AI 웹호스팅</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">교수</div>
+          <div class="info-card-value">박경배 교수님</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">강의실</div>
+          <div class="info-card-value">405호</div>
+          <div class="info-card-value" style="margin-top:6px">407호</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">강의시간</div>
+          <div class="info-card-value">월요일 13:40</div>
+          <div class="info-card-value" style="margin-top:6px">화요일 10:00</div>
+        </div>
+      </div>
+    </section>
 
-</section>
+    <div class="divider"></div>
 
-<section>
-<h2 style="color: green;"><b>AI Web 수업 실습 파일</b></h2>
-<br>
-<h2>HTML</h2>
+    <!-- ── 실습 파일 ── -->
+    <section class="section">
+      <div class="section-label">Practice Files</div>
+      <h2 class="section-title">수업 실습 파일</h2>
 
-    <div class="AI_Web_week_4">
-        <h3>4주차</h3>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_4/meta.html">메타 태그</a>
-                </li>
-            </ul>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_4/pharagraph.html">문단 태그</a>
-                </li>
-            </ul>
-            <br>
-    </div>
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('web3d', this)">🌐 Web 3D 가상현실</button>
+        <button class="tab-btn" onclick="switchTab('aiweb', this)">🤖 AI Web</button>
+      </div>
 
-    <div class="AI_Web_week_5">
-        <h3>5주차</h3>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_5/character.html">문자 태그</a>
-                </li>
-            </ul>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_5/aiCharacter.html">AI 문자 태그</a>
-                </li>
-            </ul>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_5/heading.html">헤딩 태그</a>
-                </li>
-            </ul>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_5/specialCharacter.html">특수 문자 태그</a>
-                </li>
-            </ul>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_5/table.html">테이블 태그</a>
-                </li>
-            </ul>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_5/tableSpan.html">테이블 병합</a>
-                </li>
-            </ul>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_5/tableSize.html">테이블 크기 조절</a>
-                </li>
-            </ul>
-            <br>
-    </div>
+      <!-- Web3D -->
+      <div id="tab-web3d" class="tab-content active">
 
-    <div class="AI_Web_week_6">
-        <h3>6주차</h3>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_6/img.html">이미지 태그</a>
-                </li>
-            </ul>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_6/img2.html">이미지 태그 (크기조절)</a>
-                </li>
-            </ul>
-    <br>
-    </div>
-    
+        <!-- 2학년 -->
+        <div class="week-group open">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>🏆 2학년 최종 실습</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="Web3D/grass/index.html">
+                <span class="file-dot"></span> 가상현실 (초원) — 방향키로 이동
+              </a>
+            </div>
+          </div>
+        </div>
 
-     <div class="AI_Web_week_7">
-        <h3>7주차</h3>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_7/hyperLink.html">하이퍼링크 태그</a>
-                </li>
-            </ul>
-            <ul>
-                <li>
-                <a href = "AI_Web/week_7/hyperLink2.html">하이퍼링크 태그 2</a>
-                </li>
-            </ul>
-    <br>
-    </div>
-    <hr>
-    
-    <h2>CSS3</h2>
-    <br>
-    <br>
-    <hr>
-    <h2>JavaScript</h2>
-    <br>
-    <br>
-    
+        <!-- 2주차 -->
+        <div class="week-group">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>📅 2주차</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="Web3D/week_2/touchSensorOnOff.html"><span class="file-dot"></span> 터치 센서 1</a>
+              <a class="file-item" href="Web3D/week_2/touchSensorOnOff2.html"><span class="file-dot"></span> 터치 센서 2</a>
+            </div>
+          </div>
+        </div>
 
-</section>
+        <!-- 3주차 -->
+        <div class="week-group">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>📅 3주차</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="Web3D/week_3/timeSensor1.html"><span class="file-dot"></span> 타임 센서 1</a>
+              <a class="file-item" href="Web3D/week_3/timeSensor2.html"><span class="file-dot"></span> 타임 센서 2</a>
+              <a class="file-item" href="Web3D/week_3/dom.html"><span class="file-dot"></span> DOM 객체</a>
+            </div>
+          </div>
+        </div>
 
-<section>
-<h2>겔러리</h2>
-<img src="img/여주대.png">
-</section>
+        <!-- 4주차 -->
+        <div class="week-group">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>📅 4주차</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="Web3D/week_4/ProximitySensor.html"><span class="file-dot"></span> Proximity 센서
+                1 (브라우저 호환 안됨)</a>
+              <a class="file-item" href="Web3D/week_4/ProximitySensor2.html"><span class="file-dot"></span> Proximity 센서
+                2 (브라우저 호환 안됨)</a>
+              <a class="file-item" href="Web3D/week_4/sensorBox.html"><span class="file-dot"></span> 센서 박스</a>
+            </div>
+          </div>
+        </div>
 
-<section>
-<h2>내 정보</h2>
-<div class="contact">
-<p>학교 : 여주대학교</p>
-<p>이름 : 이상경</p>
-<p>학번: 20210359</p>
-<p>이메일: apzkslrtm147@naver.com</p>
-<p>홈페이지 주소: lskvr.github.io</p>
-</div>
-</section>
+        <!-- 5주차 -->
+        <div class="week-group">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>📅 5주차</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="Web3D/week_5/javaScriptEvent.html"><span class="file-dot"></span> 자바스크립트
+                이벤트</a>
+              <a class="file-item" href="Web3D/week_5/get_set_method.html"><span class="file-dot"></span> 색상 변경 토글
+                메소드</a>
+              <a class="file-item" href="Web3D/week_5/get_set_FieldValue.html"><span class="file-dot"></span> 박스 클릭
+                이동</a>
+            </div>
+          </div>
+        </div>
 
-<footer>
-<p>© 2026 My Web Page</p>
-</footer>
+        <!-- 6주차 -->
+        <div class="week-group">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>📅 6주차</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="Web3D/week_6/childAppendDelete.html"><span class="file-dot"></span> 요소 추가
+                삭제</a>
+              <a class="file-item" href="Web3D/week_6/positionChaser.html"><span class="file-dot"></span> 마우스를 따라오는
+                이벤트</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8주차 -->
+        <div class="week-group">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>📅 8주차</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="Web3D/week_8/colorInterpolator.html"><span class="file-dot"></span> 색상
+                인터폴레이터</a>
+              <a class="file-item" href="Web3D/week_8/colorInterpolator2.html"><span class="file-dot"></span> 색상 인터폴레이터
+                (버튼)</a>
+              <a class="file-item" href="Web3D/week_8/coordinateInterpolator.html"><span class="file-dot"></span> 좌표
+                인터폴레이터</a>
+              <a class="file-item" href="Web3D/week_8/coordinateInterpolator2.html"><span class="file-dot"></span> 좌표
+                인터폴레이터 (버튼)</a>
+              <a class="file-item" href="Web3D/week_8/panorama.html"><span class="file-dot"></span> 파노라마</a>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /tab-web3d -->
+
+      <!-- AI Web -->
+      <div id="tab-aiweb" class="tab-content">
+
+        <!-- 4주차 -->
+        <div class="week-group open">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>📅 4주차</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="AI_Web/week_4/meta.html"><span class="file-dot"></span> 메타 태그</a>
+              <a class="file-item" href="AI_Web/week_4/pharagraph.html"><span class="file-dot"></span> 문단 태그</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5주차 -->
+        <div class="week-group">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>📅 5주차</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="AI_Web/week_5/character.html"><span class="file-dot"></span> 문자 태그</a>
+              <a class="file-item" href="AI_Web/week_5/aiCharacter.html"><span class="file-dot"></span> AI 문자 태그</a>
+              <a class="file-item" href="AI_Web/week_5/heading.html"><span class="file-dot"></span> 헤딩 태그</a>
+              <a class="file-item" href="AI_Web/week_5/specialCharacter.html"><span class="file-dot"></span> 특수 문자
+                태그</a>
+              <a class="file-item" href="AI_Web/week_5/table.html"><span class="file-dot"></span> 테이블 태그</a>
+              <a class="file-item" href="AI_Web/week_5/tableSpan.html"><span class="file-dot"></span> 테이블 병합</a>
+              <a class="file-item" href="AI_Web/week_5/tableSize.html"><span class="file-dot"></span> 테이블 크기 조절</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6주차 -->
+        <div class="week-group">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>📅 6주차</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="AI_Web/week_6/img.html"><span class="file-dot"></span> 이미지 태그</a>
+              <a class="file-item" href="AI_Web/week_6/img2.html"><span class="file-dot"></span> 이미지 태그 (크기조절)</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7주차 -->
+        <div class="week-group">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>📅 7주차</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="AI_Web/week_7/hyperLink.html"><span class="file-dot"></span> 하이퍼링크 태그</a>
+              <a class="file-item" href="AI_Web/week_7/hyperLink2.html"><span class="file-dot"></span> 하이퍼링크 태그 2</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 11주차 -->
+        <div class="week-group">
+          <div class="week-header" onclick="toggleWeek(this)">
+            <h3>📅 11주차</h3>
+            <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <div class="week-body">
+            <div class="file-list">
+              <a class="file-item" href="AI_Web/week_11/form.html"><span class="file-dot"></span> 폼 태그</a>
+              <a class="file-item" href="AI_Web/week_11/form2.html"><span class="file-dot"></span> 폼 태그 2</a>
+              <a class="file-item" href="AI_Web/week_11/selectForm.html"><span class="file-dot"></span> select 폼 태그</a>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /tab-aiweb -->
+
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ── 갤러리 ── -->
+    <section class="section">
+      <div class="section-label">Gallery</div>
+      <h2 class="section-title">갤러리</h2>
+      <div class="gallery-wrap">
+        <img src="img/여주대.png" alt="여주대학교">
+        <div class="gallery-caption">여주대학교</div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ── 내 정보 ── -->
+    <section class="section">
+      <div class="section-label">Profile</div>
+      <h2 class="section-title">내 정보</h2>
+      <div class="profile-card">
+        <div class="profile-avatar">이</div>
+        <div class="profile-name">이상경</div>
+        <div class="profile-school">여주대학교 · 학번 20210359</div>
+        <div class="profile-items">
+          <div class="profile-item">
+            <div class="profile-item-icon">🏫</div>
+            <span>학교: <span class="profile-item-value">여주대학교</span></span>
+          </div>
+          <div class="profile-item">
+            <div class="profile-item-icon">📧</div>
+            <span>이메일: <span class="profile-item-value">apzkslrtm147@naver.com</span></span>
+          </div>
+          <div class="profile-item">
+            <div class="profile-item-icon">🌐</div>
+            <span>홈페이지: <span class="profile-item-value">lskvr.github.io</span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>© 2026 이상경의 웹페이지</span>
+    <div class="footer-line"></div>
+  </footer>
+
+  <script>
+    /* ── 배경 파티클 캔버스 ── */
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [];
+
+    function resize() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    class Particle {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * W;
+        this.y = Math.random() * H;
+        this.r = Math.random() * 1.5 + 0.3;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = (Math.random() - 0.5) * 0.3;
+        this.alpha = Math.random() * 0.5 + 0.1;
+        this.color = Math.random() > 0.5 ? '108,99,255' : '0,212,170';
+      }
+      update() {
+        this.x += this.vx; this.y += this.vy;
+        if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${this.color},${this.alpha})`;
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < 120; i++) particles.push(new Particle());
+
+    function animParticles() {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach(p => { p.update(); p.draw(); });
+      /* 가까운 파티클끼리 선 연결 */
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 100) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(108,99,255,${0.1 * (1 - dist / 100)})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(animParticles);
+    }
+    animParticles();
+
+    /* ── 스크롤 인 애니메이션 ── */
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+    /* ── 탭 전환 ── */
+    function switchTab(id, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + id).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    /* ── 아코디언 ── */
+    function toggleWeek(header) {
+      const group = header.closest('.week-group');
+      group.classList.toggle('open');
+    }
+  </script>
 
 </body>
+
 </html>
