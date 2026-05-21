@@ -75,31 +75,31 @@
     /* ── 가상 D-PAD ── */
     #dpad {
       position: fixed;
-      right: 20px;
-      bottom: 30px;
+      right: 16px;
+      bottom: 100px;
       z-index: 100;
-      display: none; /* JS에서 모바일 감지 시 표시 */
+      display: none;
       user-select: none;
       -webkit-user-select: none;
     }
 
     #dpad .dpad-grid {
       display: grid;
-      grid-template-columns: repeat(3, 56px);
-      grid-template-rows: repeat(3, 56px);
-      gap: 4px;
+      grid-template-columns: repeat(3, 80px);
+      grid-template-rows: repeat(3, 80px);
+      gap: 6px;
     }
 
     #dpad .dpad-btn {
-      width: 56px;
-      height: 56px;
+      width: 80px;
+      height: 80px;
       background: rgba(255,255,255,0.25);
       border: 2px solid rgba(255,255,255,0.6);
-      border-radius: 10px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
+      font-size: 32px;
       cursor: pointer;
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
@@ -121,16 +121,16 @@
     /* 속도 토글 버튼 */
     #speedToggle {
       position: fixed;
-      right: 20px;
-      bottom: 230px;
+      right: 16px;
+      bottom: 60px;
       z-index: 100;
       display: none;
       background: rgba(255,255,255,0.25);
       border: 2px solid rgba(255,255,255,0.6);
-      border-radius: 10px;
-      padding: 8px 14px;
+      border-radius: 8px;
+      padding: 5px 10px;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 13px;
+      font-size: 11px;
       color: #fff;
       cursor: pointer;
       backdrop-filter: blur(4px);
