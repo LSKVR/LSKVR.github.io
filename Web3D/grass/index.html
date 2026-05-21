@@ -8,49 +8,50 @@
   <link rel="stylesheet" href="https://www.x3dom.org/download/x3dom.css">
   <script src="https://www.x3dom.org/download/x3dom.js"></script>
   <style>
-    html,
-    body {
+    html, body {
       height: 100%;
       margin: 0;
+      touch-action: none;
     }
 
     #x3d-container {
       width: 100%;
       height: 100vh;
       background: skyblue;
-      display: block
+      display: block;
     }
 
     .hint {
       position: fixed;
       left: 10px;
       top: 10px;
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255,255,255,0.95);
       padding: 8px 12px;
       border-radius: 6px;
       font-family: Arial, Helvetica, sans-serif;
       font-size: 13px;
-      z-index: 10
+      z-index: 10;
+      pointer-events: none;
     }
 
     .note {
       position: fixed;
       right: 10px;
       top: 10px;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0,0,0,0.6);
       color: #fff;
       padding: 6px 10px;
       border-radius: 6px;
       font-family: Arial, Helvetica, sans-serif;
       font-size: 12px;
-      z-index: 10
+      z-index: 10;
     }
 
     .panel {
       position: fixed;
       left: 10px;
       bottom: 10px;
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255,255,255,0.9);
       padding: 8px 10px;
       border-radius: 6px;
       max-height: 60vh;
@@ -70,11 +71,84 @@
       padding: 4px 6px;
       font-size: 12px;
     }
+
+    /* ── 가상 D-PAD ── */
+    #dpad {
+      position: fixed;
+      right: 20px;
+      bottom: 30px;
+      z-index: 100;
+      display: none; /* JS에서 모바일 감지 시 표시 */
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #dpad .dpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 56px);
+      grid-template-rows: repeat(3, 56px);
+      gap: 4px;
+    }
+
+    #dpad .dpad-btn {
+      width: 56px;
+      height: 56px;
+      background: rgba(255,255,255,0.25);
+      border: 2px solid rgba(255,255,255,0.6);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      transition: background 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #dpad .dpad-btn:active,
+    #dpad .dpad-btn.pressed {
+      background: rgba(255,255,255,0.55);
+    }
+
+    #dpad .dpad-center {
+      background: rgba(255,255,255,0.10);
+      border-color: rgba(255,255,255,0.2);
+      cursor: default;
+    }
+
+    /* 속도 토글 버튼 */
+    #speedToggle {
+      position: fixed;
+      right: 20px;
+      bottom: 230px;
+      z-index: 100;
+      display: none;
+      background: rgba(255,255,255,0.25);
+      border: 2px solid rgba(255,255,255,0.6);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      color: #fff;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    #speedToggle.fast {
+      background: rgba(255, 200, 50, 0.45);
+      border-color: rgba(255,220,80,0.9);
+    }
   </style>
 </head>
 
 <body style="background:skyblue;">
-  <div class="hint">방향키: 이동 · 회전 / Shift: 빠르게 이동</div>
+  <div class="hint" id="hintText">방향키: 이동 · 회전 / Shift: 빠르게 이동</div>
   <div class="note"></div>
 
   <div class="panel" id="modelPanel" style="display:none;">
@@ -82,13 +156,38 @@
     <div id="modelButtons"></div>
   </div>
 
+  <!-- 가상 D-PAD (모바일용) -->
+  <div id="dpad">
+    <div class="dpad-grid">
+      <!-- Row 1 -->
+      <div></div>
+      <div class="dpad-btn" id="btn-forward">▲</div>
+      <div></div>
+      <!-- Row 2 -->
+      <div class="dpad-btn" id="btn-left">◀</div>
+      <div class="dpad-btn dpad-center"></div>
+      <div class="dpad-btn" id="btn-right">▶</div>
+      <!-- Row 3 -->
+      <div></div>
+      <div class="dpad-btn" id="btn-backward">▼</div>
+      <div></div>
+    </div>
+  </div>
+
+  <!-- 빠른 이동 토글 (모바일용) -->
+  <button id="speedToggle">🐢 보통</button>
+
   <x3d id="x3d-container">
     <scene id="scene">
-      <background backUrl="img/sky_back.jpg" frontUrl="img/sky_front.jpg" leftUrl="img/sky_left.jpg"
-        rightUrl="img/sky_right.jpg" topUrl="img/sky_top.jpg" bottomUrl="img/sky_bottom.jpg">
+      <background
+        backUrl="img/sky_back.jpg"
+        frontUrl="img/sky_front.jpg"
+        leftUrl="img/sky_left.jpg"
+        rightUrl="img/sky_right.jpg"
+        topUrl="img/sky_top.jpg"
+        bottomUrl="img/sky_bottom.jpg">
       </background>
 
-      <!-- 조명을 약하게 수정 -->
       <directionalLight direction='-0.4 -1 -0.2' intensity='0.2' color='1 0.98 0.95'></directionalLight>
       <ambientLight intensity='0.15' color='1 1 1'></ambientLight>
 
@@ -107,8 +206,7 @@
       <transform translation="0 -0.1 -600">
         <shape>
           <appearance>
-            <material diffuseColor='0.02 0.35 0.6' specularColor='0.2 0.5 0.7' shininess='0.4' transparency='0.0'>
-            </material>
+            <material diffuseColor='0.02 0.35 0.6' specularColor='0.2 0.5 0.7' shininess='0.4' transparency='0.0'></material>
           </appearance>
           <box size='3000 0.1 800'></box>
         </shape>
@@ -124,6 +222,9 @@
       const envGroup = document.getElementById('envGroup');
       const modelPanel = document.getElementById('modelPanel');
       const modelButtons = document.getElementById('modelButtons');
+      const dpad = document.getElementById('dpad');
+      const speedToggle = document.getElementById('speedToggle');
+      const hintText = document.getElementById('hintText');
 
       let pos = { x: 0, y: 15, z: 10 };
       let yaw = Math.PI;
@@ -132,64 +233,113 @@
       const moveSpeed = 225.0;
       const rotateSpeed = 1.8;
 
+      // ── 모바일 감지 ──
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent)
+        || ('ontouchstart' in window)
+        || (navigator.maxTouchPoints > 1);
+
+      if (isMobile) {
+        dpad.style.display = 'block';
+        speedToggle.style.display = 'block';
+        hintText.textContent = '터치 D-PAD로 이동 · 회전';
+      }
+
+      // ── 속도 토글 ──
+      speedToggle.addEventListener('click', () => {
+        if (speedMultiplier === 1) {
+          speedMultiplier = 3;
+          speedToggle.textContent = '🐇 빠름';
+          speedToggle.classList.add('fast');
+        } else {
+          speedMultiplier = 1;
+          speedToggle.textContent = '🐢 보통';
+          speedToggle.classList.remove('fast');
+        }
+      });
+
+      // ── D-PAD 터치 이벤트 ──
+      function setupDpadButton(id, key) {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+
+        const press = (e) => {
+          e.preventDefault();
+          move[key] = true;
+          btn.classList.add('pressed');
+        };
+        const release = (e) => {
+          e.preventDefault();
+          move[key] = false;
+          btn.classList.remove('pressed');
+        };
+
+        btn.addEventListener('touchstart', press, { passive: false });
+        btn.addEventListener('touchend', release, { passive: false });
+        btn.addEventListener('touchcancel', release, { passive: false });
+        // 마우스 지원도 (PC에서 클릭 테스트용)
+        btn.addEventListener('mousedown', press);
+        btn.addEventListener('mouseup', release);
+        btn.addEventListener('mouseleave', release);
+      }
+
+      setupDpadButton('btn-forward',  'forward');
+      setupDpadButton('btn-backward', 'backward');
+      setupDpadButton('btn-left',     'left');
+      setupDpadButton('btn-right',    'right');
+
+      // ── 뷰 적용 ──
       function applyView() {
-        const limit = 1400; // 이동 제한 확장
-        if (pos.x > limit) pos.x = limit;
+        const limit = 1400;
+        if (pos.x >  limit) pos.x =  limit;
         if (pos.x < -limit) pos.x = -limit;
-        if (pos.z > limit) pos.z = limit;
+        if (pos.z >  limit) pos.z =  limit;
         if (pos.z < -limit) pos.z = -limit;
         if (pos.y < 1.0) pos.y = 1.0;
-        view.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+        view.setAttribute('position',    `${pos.x} ${pos.y} ${pos.z}`);
         view.setAttribute('orientation', `0 1 0 ${yaw}`);
       }
       applyView();
 
+      // ── 게임 루프 ──
       let last = performance.now();
       function tick(now) {
         const dt = (now - last) / 1000; last = now;
-        if (move.left) yaw += rotateSpeed * dt;
+        if (move.left)  yaw += rotateSpeed * dt;
         if (move.right) yaw -= rotateSpeed * dt;
         let dir = 0;
-        if (move.forward) dir -= 1;
+        if (move.forward)  dir -= 1;
         if (move.backward) dir += 1;
         if (dir !== 0) {
           const s = moveSpeed * speedMultiplier * dt * dir;
-          const fx = Math.sin(yaw);
-          const fz = Math.cos(yaw);
-          pos.x += fx * s;
-          pos.z += fz * s;
+          pos.x += Math.sin(yaw) * s;
+          pos.z += Math.cos(yaw) * s;
         }
         applyView();
         requestAnimationFrame(tick);
       }
       requestAnimationFrame(tick);
 
+      // ── 키보드 이벤트 (PC) ──
       window.addEventListener('keydown', (e) => {
         switch (e.key) {
-          case 'ArrowUp': move.forward = true; break;
-          case 'ArrowDown': move.backward = true; break;
-          case 'ArrowLeft': move.left = true; break;
-          case 'ArrowRight': move.right = true; break;
-          case 'Shift': speedMultiplier = 3; break;
+          case 'ArrowUp':    move.forward   = true; break;
+          case 'ArrowDown':  move.backward  = true; break;
+          case 'ArrowLeft':  move.left      = true; break;
+          case 'ArrowRight': move.right     = true; break;
+          case 'Shift':      speedMultiplier = 3;   break;
         }
       });
       window.addEventListener('keyup', (e) => {
         switch (e.key) {
-          case 'ArrowUp': move.forward = false; break;
-          case 'ArrowDown': move.backward = false; break;
-          case 'ArrowLeft': move.left = false; break;
-          case 'ArrowRight': move.right = false; break;
-          case 'Shift': speedMultiplier = 1; break;
+          case 'ArrowUp':    move.forward   = false; break;
+          case 'ArrowDown':  move.backward  = false; break;
+          case 'ArrowLeft':  move.left      = false; break;
+          case 'ArrowRight': move.right     = false; break;
+          case 'Shift':      speedMultiplier = 1;    break;
         }
       });
 
-      function createTransform(x, z, inner) {
-        const t = document.createElement('transform');
-        t.setAttribute('translation', `${x} 0 ${z}`);
-        t.innerHTML = inner;
-        return t;
-      }
-
+      // ── 환경 오브젝트 생성 헬퍼 ──
       function createTree(x, z, scale = 1) {
         const t = document.createElement('transform');
         t.setAttribute('translation', `${x} 0 ${z}`);
@@ -222,12 +372,10 @@
 
       function scatterFixedMore() {
         const treePositions = [
-          // Original inner trees
           [-400, 300], [100, -250], [200, 200], [-150, -350], [300, 100],
           [-250, 0], [0, -200], [350, -300], [-300, 250], [150, 150],
           [-200, 320], [250, -270], [180, 150], [-120, -330], [280, 50],
           [-270, 50], [50, -180], [320, -250], [-250, 200], [100, 180],
-          // Edge trees (Expanded area)
           [800, 800], [-800, -800], [800, -800], [-800, 800],
           [1200, 0], [-1200, 0], [0, 1200], [0, -1200],
           [1000, 500], [1000, -650], [-1000, 500], [-1100, -600],
@@ -236,45 +384,37 @@
           [600, 1300], [1300, 600], [-600, 1300], [-1300, 600],
           [600, -1300], [1300, -600], [-600, -1300], [-1300, -600]
         ];
-        treePositions.forEach(([x, z]) => {
-          envGroup.appendChild(createTree(x, z, 2));
-        });
+        treePositions.forEach(([x, z]) => envGroup.appendChild(createTree(x, z, 2)));
 
         const housePositions = [
-          // Original inner houses
           [-300, -200], [260, -220], [220, 260],
           [-220, 150], [180, -180], [100, 220],
-          // Edge houses (Expanded area)
           [900, 200], [-900, -200], [200, 900], [-200, -900],
           [1100, 1100], [-1100, 1100], [1100, -1100], [-1100, -1100],
           [1300, 0], [-1300, 0]
         ];
-        housePositions.forEach(([x, z]) => {
-          envGroup.appendChild(createHouse(x, z, 5.2));
-        });
+        housePositions.forEach(([x, z]) => envGroup.appendChild(createHouse(x, z, 5.2)));
 
         envGroup.appendChild(createBench(40, -120, 1));
         envGroup.appendChild(createBench(80, -140, 1));
         envGroup.appendChild(createBench(-60, -130, 1));
       }
-
       scatterFixedMore();
 
       (function createWavePlane() {
         const t = document.createElement('transform');
         t.setAttribute('translation', '0 -0.05 -420');
         t.innerHTML = `
-        <shape>
-          <appearance>
-            <material diffuseColor='0.02 0.35 0.6' specularColor='0.5 0.6 0.7' shininess='0.8' transparency='0.0'></material>
-          </appearance>
-          <box size='2200 0.02 600'></box>
-        </shape>
-      `;
+          <shape>
+            <appearance>
+              <material diffuseColor='0.02 0.35 0.6' specularColor='0.5 0.6 0.7' shininess='0.8' transparency='0.0'></material>
+            </appearance>
+            <box size='2200 0.02 600'></box>
+          </shape>`;
         envGroup.appendChild(t);
       })();
 
-      // --- 외부 X3D 모델 ---
+      // ── 외부 X3D 모델 ──
       function loadExternalX3DObjectsUniform() {
         const files = [
           "redBox.x3d", "cRoss.x3d", "cone.x3d", "cylinder.x3d", "sphere.x3d",
@@ -293,13 +433,12 @@
 
         const cols = Math.ceil(Math.sqrt(N));
         const rows = Math.ceil(N / cols);
-        const AREA = 2400; // 간격 넓힘
+        const AREA = 2400;
         const HALF = AREA / 2;
         const cellW = AREA / cols;
         const cellH = AREA / rows;
         modelButtons.innerHTML = '';
         modelPanel.style.display = 'block';
-
 
         for (let i = 0; i < N; i++) {
           const file = files[i];
@@ -308,30 +447,22 @@
           const x = -HALF + cellW * col + cellW / 2;
           const z = -HALF + cellH * row + cellH / 2;
           const t = document.createElement('transform');
-
-          // ↑ 위치 수정: 4 -> 15 (더 높이 띄움)
           const yHeight = 15;
           t.setAttribute('translation', `${x} ${yHeight} ${z}`);
-          t.setAttribute('scale', `2 2 2`); // 크기 2배
-
+          t.setAttribute('scale', `2 2 2`);
           const inline = document.createElement('Inline');
           inline.setAttribute('url', file);
           t.appendChild(inline);
-
           t.setAttribute('id', `model_${i}`);
           envGroup.appendChild(t);
 
-
           const btn = document.createElement('button');
           btn.textContent = file.replace('.x3d', '');
-
-          // 클릭 시 부드러운 카메라 이동
           btn.addEventListener('click', () => {
-            const targetPos = { x: x, y: yHeight, z: z + 20 }; // 모델 앞쪽 (거리도 살짝 늘림)
+            const targetPos = { x, y: yHeight, z: z + 20 };
             const startPos = { ...pos };
-            const duration = 1000; // 1초
+            const duration = 1000;
             const startTime = performance.now();
-
             function animate(now) {
               const t = Math.min((now - startTime) / duration, 1);
               pos.x = startPos.x + (targetPos.x - startPos.x) * t;
@@ -342,15 +473,13 @@
             }
             requestAnimationFrame(animate);
           });
-
           modelButtons.appendChild(btn);
         }
       }
-
       loadExternalX3DObjectsUniform();
-      console.log('X3DOM grassLand scene created with enlarged models and smooth camera movement.');
+
+      console.log('X3DOM grassLand – mobile D-PAD enabled.');
     })();
   </script>
 </body>
-
 </html>
