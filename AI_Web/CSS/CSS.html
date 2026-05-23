@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS 실습 파일</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Syncopate:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface2: #1a1a26;
+            --accent: #6c63ff;
+            --accent2: #a78bfa;
+            --accent3: #ff6b6b;
+            --text: #e8e8f0;
+            --text-muted: #8888aa;
+            --border: rgba(108, 99, 255, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .top-nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 40px;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 13px;
+            letter-spacing: 1px;
+            transition: color 0.2s ease;
+        }
+        .nav-back:hover { color: var(--accent); }
+
+        .nav-title {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: var(--accent);
+        }
+
+        .nav-badge {
+            font-size: 11px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(108, 99, 255, 0.1);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            letter-spacing: 1px;
+        }
+
+        header {
+            position: relative;
+            z-index: 10;
+            padding: 160px 40px 80px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .page-badge {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 10px;
+            letter-spacing: 5px;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            opacity: 0;
+            animation: fadeUp 0.7s ease 0.2s forwards;
+        }
+
+        header h1 {
+            font-family: 'Syncopate', sans-serif;
+            font-size: clamp(24px, 4vw, 48px);
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 60%, var(--accent2) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            opacity: 0;
+            animation: fadeUp 0.7s ease 0.4s forwards;
+        }
+
+        .page-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            opacity: 0;
+            animation: fadeUp 0.7s ease 0.6s forwards;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        main {
+            position: relative;
+            z-index: 10;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 40px 100px;
+        }
+
+        .week-group {
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.5s ease forwards;
+        }
+
+        .week-group:nth-child(1) { animation-delay: 0.1s; }
+        .week-group:nth-child(2) { animation-delay: 0.2s; }
+        .week-group:nth-child(3) { animation-delay: 0.3s; }
+        .week-group:nth-child(4) { animation-delay: 0.4s; }
+        .week-group:nth-child(5) { animation-delay: 0.5s; }
+        .week-group:nth-child(6) { animation-delay: 0.6s; }
+
+        .week-group:hover { border-color: rgba(108, 99, 255, 0.4); }
+
+        .week-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--surface);
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .week-header:hover { background: var(--surface2); }
+
+        .week-header h3 {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--accent);
+            letter-spacing: 1px;
+        }
+
+        .week-arrow {
+            width: 20px; height: 20px;
+            color: var(--text-muted);
+            transition: transform 0.3s ease;
+        }
+        .week-group.open .week-arrow { transform: rotate(180deg); }
+
+        .week-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+            background: var(--bg);
+        }
+        .week-group.open .week-body { max-height: 500px; }
+
+        .file-list { padding: 8px 0; }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            border-left: 2px solid transparent;
+        }
+        .file-item:hover {
+            color: var(--text);
+            background: var(--surface);
+            border-left-color: var(--accent);
+            padding-left: 28px;
+        }
+
+        .file-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            flex-shrink: 0;
+            opacity: 0.5;
+            transition: opacity 0.2s ease;
+        }
+        .file-item:hover .file-dot { opacity: 1; }
+
+        .empty-notice {
+            padding: 24px 20px;
+            color: var(--text-muted);
+            font-size: 13px;
+            letter-spacing: 1px;
+            text-align: center;
+            opacity: 0.6;
+        }
+
+        footer {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-line {
+            width: 40px; height: 1px;
+            background: var(--accent);
+            margin: 12px auto 0;
+        }
+
+        a { color: inherit; }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <nav class="top-nav">
+        <a href="../AI_Web.html" class="nav-back">← 뒤로</a>
+        <span class="nav-title">CSS</span>
+        <span class="nav-badge">실습 파일</span>
+    </nav>
+
+    <header>
+        <div class="page-badge">Practice Files</div>
+        <h1>CSS<br>실습 파일</h1>
+        <p class="page-desc">선택자 · 박스모델 · 레이아웃 · 애니메이션 실습 파일 모음</p>
+    </header>
+
+    <main>
+
+        <!-- 13주차 -->
+        <div class="week-group open">
+            <div class="week-header" onclick="toggleWeek(this)">
+                <h3>📅 13주차</h3>
+                <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </div>
+            <div class="week-body">
+                <div class="file-list">
+                    <div class="empty-notice">수업 파일이 추가될 예정입니다.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 14주차 -->
+        <div class="week-group">
+            <div class="week-header" onclick="toggleWeek(this)">
+                <h3>📅 14주차</h3>
+                <svg class="week-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
+            </div>
+            <div class="week-body">
+                <div class="file-list">
+                    <div class="empty-notice">수업 파일이 추가될 예정입니다.</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer>
+        <span>© 2026 이상경의 웹페이지</span>
+        <div class="footer-line"></div>
+    </footer>
+
+    <script>
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let W, H, particles = [];
+
+        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+        resize();
+        window.addEventListener('resize', resize);
+
+        class Particle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * W; this.y = Math.random() * H;
+                this.r = Math.random() * 1.5 + 0.3;
+                this.vx = (Math.random() - 0.5) * 0.3; this.vy = (Math.random() - 0.5) * 0.3;
+                this.alpha = Math.random() * 0.5 + 0.1;
+                this.color = Math.random() > 0.5 ? '108,99,255' : '167,139,250';
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+            }
+            draw() {
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${this.color},${this.alpha})`; ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 100; i++) particles.push(new Particle());
+
+        function animParticles() {
+            ctx.clearRect(0, 0, W, H);
+            particles.forEach(p => { p.update(); p.draw(); });
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 100) {
+                        ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(108,99,255,${0.1 * (1 - dist / 100)})`;
+                        ctx.lineWidth = 0.5; ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animParticles);
+        }
+        animParticles();
+
+        function toggleWeek(header) {
+            header.closest('.week-group').classList.toggle('open');
+        }
+    </script>
+
+</body>
+</html>
