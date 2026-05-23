@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <title>예제4-3 Select/textarea</title>
+</head>
+
+<body>
+    <p>Select/textarea</p>
+    <form action="text.jsp" method="post">
+        <label for="ai">Select:</label>
+        <select id="ai" name="ai">
+            <option value="deep">Deep</option>
+            <option value="alpha">Alpha</option>
+            <option value="chatgpt">ChatGPT</option>
+            <option value="python">Python</option>
+        </select>
+        <label for="message">문의사항:</label><br>
+        <textarea id="message" name="message" rows="10" cols="30" placeholder="문의 사항을 입력하세요..."></textarea>
+        <br><br>
+        <input type="submit" value="Submit">
+        <input type="reset" value="취소">
+    </form>
+</body>
+
+</html>
