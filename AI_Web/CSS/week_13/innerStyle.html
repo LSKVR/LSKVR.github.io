@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <title>예제5-3 내부스타일시트</title>
+
+    <!-- 내부 스타일시트: <head> 안에 <style> 태그로 CSS를 직접 작성 -->
+    <style>
+        /* h1과 p 태그의 글자색을 금색(gold)으로 설정 */
+        h1,
+        p {
+            color: gold;
+        }
+
+        /* p 태그의 배경색을 회색(gray)으로 설정 */
+        /* 위의 color: gold와 함께 적용되어 p는 두 스타일 모두 적용됨 */
+        p {
+            background-color: gray;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- h1: color: gold 적용 -->
+    <h1>내부 스타일시트 예제</h1>
+
+    <!-- 네비게이션 메뉴 영역 -->
+    <div id="menu">
+        <!-- p: color: gold + background-color: gray 모두 적용 -->
+        <p>
+            <!-- 새 탭으로 열리는 링크들 -->
+            <a href="../../HTML/week_7/hyperLink.html" target="_blank">하이퍼링크</a>
+            &nbsp;<a href="../../HTML/week_12/verification.html" target="_blank">추가된 폼 속성</a>
+            &nbsp;<a href="../../HTML/week_12/video.html" target="_blank">비디오</a>
+        </p>
+    </div>
+
+    <!-- h1: color: gold 적용 -->
+    <h1>HTML5와 CSS3</h1>
+
+    <!-- p: color: gold + background-color: gray 모두 적용 -->
+    <p>이 문장은 내부 스타일시트를 사용해 색상이 적용됩니다.</p>
+
+    <!-- h2: 별도 스타일 없음 (기본값 적용) -->
+    <h2>하이퍼링크</h2>
+
+    <!-- p: color: gold + background-color: gray 모두 적용 -->
+    <p>이 문장도 배경색과 글자색이 적용됩니다.</p>
+</body>
+
+</html>
