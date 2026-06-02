@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>폰트 텍스트 & 16진수 색상</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: sans-serif; color: #333; }
+  .page { width: 100%; padding: 1.5rem; border-bottom: 2px dashed #ccc; margin-bottom: 1rem; }
+  .page-title { font-size: 18px; font-weight: bold; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #ddd; color: #555; }
+  .section { margin-bottom: 1.2rem; }
+  .section-label { font-size: 12px; color: #999; margin-bottom: 6px; font-weight: bold; letter-spacing: 0.05em; }
+  .demo-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .color-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .color-card { border-radius: 8px; overflow: hidden; border: 0.5px solid #ddd; }
+  .color-swatch { height: 60px; }
+  .color-info { padding: 8px; }
+  .color-hex { font-size: 13px; font-weight: bold; }
+  .color-desc { font-size: 11px; color: #666; }
+  .tip-box { margin-top: 1.2rem; padding: 1rem; background: #f5f5f5; border-radius: 8px; font-size: 12px; color: #666; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<!-- 1페이지: 폰트 & 텍스트 속성 -->
+<div class="page">
+  <div class="page-title">1페이지 — 폰트 & 텍스트 속성</div>
+
+  <div class="section">
+    <div class="section-label">font-size / font-weight / font-style</div>
+    <div class="demo-row">
+      <span style="font-size:12px;">12px 작게</span>
+      <span style="font-size:16px;">16px 기본</span>
+      <span style="font-size:22px;">22px 크게</span>
+      <span style="font-size:16px; font-weight:bold;">굵게(bold)</span>
+      <span style="font-size:16px; font-style:italic;">기울임</span>
+      <span style="font-size:16px; font-variant:small-caps;">Small Caps</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">font-family</div>
+    <div class="demo-row">
+      <span style="font-family:serif; font-size:15px;">Serif 계열 글꼴</span>
+      <span style="font-family:sans-serif; font-size:15px;">Sans-serif 계열</span>
+      <span style="font-family:monospace; font-size:15px;">Monospace 계열</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">color / text-decoration</div>
+    <div class="demo-row">
+      <span style="color:#e24b4a; font-size:15px;">빨간 글자</span>
+      <span style="color:#185fa5; font-size:15px;">파란 글자</span>
+      <span style="color:#3b6d11; font-size:15px;">초록 글자</span>
+      <span style="font-size:15px; text-decoration:underline;">밑줄</span>
+      <span style="font-size:15px; text-decoration:line-through;">취소선</span>
+      <span style="font-size:15px; text-decoration:overline;">윗줄</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">text-align</div>
+    <div style="border:0.5px solid #ddd; border-radius:6px; overflow:hidden;">
+      <div style="padding:6px 12px; font-size:14px; text-align:left; border-bottom:0.5px solid #ddd;">left — 왼쪽 정렬 (기본값)</div>
+      <div style="padding:6px 12px; font-size:14px; text-align:center; border-bottom:0.5px solid #ddd;">center — 가운데 정렬</div>
+      <div style="padding:6px 12px; font-size:14px; text-align:right;">right — 오른쪽 정렬</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">letter-spacing / word-spacing / line-height</div>
+    <div style="font-size:14px; letter-spacing:4px; margin-bottom:6px;">letter-spacing: 4px — 글자 간격 넓게</div>
+    <div style="font-size:14px; word-spacing:16px; margin-bottom:6px;">word spacing: 16px — 단어 간격</div>
+    <div style="font-size:14px; line-height:2.5;">line-height: 2.5<br>줄 높이가 커졌습니다</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">text-transform / text-indent / text-shadow</div>
+    <div class="demo-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+      <span style="font-size:14px; text-transform:uppercase;">text-transform: uppercase — hello world</span>
+      <span style="font-size:14px; text-transform:lowercase;">text-transform: lowercase — HELLO WORLD</span>
+      <p style="font-size:14px; text-indent:2rem;">text-indent: 2rem — 단락 첫 줄 들여쓰기 예시입니다.</p>
+      <span style="font-size:16px; text-shadow:2px 2px 4px #888;">text-shadow — 그림자 효과</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">direction / white-space</div>
+    <div style="font-size:14px; direction:rtl; margin-bottom:6px;">direction: rtl — 오른쪽에서 왼쪽으로</div>
+    <div style="font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+                max-width:260px; border:0.5px solid #ddd; padding:4px 8px; border-radius:4px;">
+      white-space: nowrap + ellipsis — 넘치는 텍스트는 이렇게 처리합니다...
+    </div>
+  </div>
+</div>
+
+<!-- 2페이지: 16진수 색상 10가지 -->
+<div class="page">
+  <div class="page-title">2페이지 — 16진수 색상 10가지</div>
+  <div class="color-grid">
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#FF5733;"></div>
+      <div class="color-info">
+        <div class="color-hex">#FF5733</div>
+        <div class="color-desc">토마토 레드 — R 높고 G·B 낮아 붉은 계열</div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#FFC300;"></div>
+      <div class="color-info">
+        <div class="color-hex">#FFC300</div>
+        <div class="color-desc">골든 옐로우 — R·G 높고 B=0, 황금색</div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#28B463;"></div>
+      <div class="color-info">
+        <div class="color-hex">#28B463</div>
+        <div class="color-desc">에메랄드 그린 — G 지배적, 자연·성공</div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#1A73E8;"></div>
+      <div class="color-info">
+        <div class="color-hex">#1A73E8</div>
+        <div class="color-desc">구글 블루 — B 높은 파랑, 신뢰·기술</div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#8E44AD;"></div>
+      <div class="color-info">
+        <div class="color-hex">#8E44AD</div>
+        <div class="color-desc">딥 퍼플 — R+B 혼합, 창의·고급</div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#F39C12;"></div>
+      <div class="color-info">
+        <div class="color-hex">#F39C12</div>
+        <div class="color-desc">오렌지 — R 높고 G 중간, 주황 계열</div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#17A589;"></div>
+      <div class="color-info">
+        <div class="color-hex">#17A589</div>
+        <div class="color-desc">틸 그린 — G+B 혼합, 시원한 청록</div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#E74C3C;"></div>
+      <div class="color-info">
+        <div class="color-hex">#E74C3C</div>
+        <div class="color-desc">알리자린 레드 — 경고·위험 표현</div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#AAB7B8;"></div>
+      <div class="color-info">
+        <div class="color-hex">#AAB7B8</div>
+        <div class="color-desc">실버 그레이 — R·G·B 동일, 중립색</div>
+      </div>
+    </div>
+
+    <div class="color-card">
+      <div class="color-swatch" style="background:#2C3E50;"></div>
+      <div class="color-info">
+        <div class="color-hex">#2C3E50</div>
+        <div class="color-desc">미드나잇 블루 — 어두운 남색, 배경용</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tip-box">
+    <strong>16진수 색상 읽는 법</strong><br>
+    #RRGGBB 형식 — 각 2자리가 Red / Green / Blue 값 (00~FF = 0~255)<br>
+    예) #FF0000 = 순수 빨강 / #00FF00 = 순수 초록 / #0000FF = 순수 파랑<br>
+    세 값이 같으면 회색 계열 (#888888), 모두 00이면 검정, 모두 FF면 흰색
+  </div>
+</div>
+
+</body>
+</html>

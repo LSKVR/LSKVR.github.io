@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>경계선 / 마진 / 패딩 / 그림자</title>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
+    h2   { background: #2c3e50; color: white; padding: 8px 14px; margin-top: 30px; }
+
+    /* ── 1. 경계선 ── */
+    .solid  { border: 3px solid  black;  padding:6px; margin-bottom:6px; }
+    .dashed { border: 3px dashed blue;   padding:6px; margin-bottom:6px; }
+    .dotted { border: 3px dotted red;    padding:6px; margin-bottom:6px; }
+    .double { border: 6px double green;  padding:6px; margin-bottom:6px; }
+    .groove { border: 6px groove purple; padding:6px; margin-bottom:6px; }
+    .ridge  { border: 6px ridge  orange; padding:6px; margin-bottom:6px; }
+    .inset  { border: 6px inset  gray;   padding:6px; margin-bottom:6px; }
+    .outset { border: 6px outset gray;   padding:6px; margin-bottom:6px; }
+    .mixed  { border-style: dotted dashed solid double;
+              border-width: 4px;
+              border-color: red blue green orange;
+              padding:6px; margin-bottom:6px; }
+    .radius { border: 3px solid tomato;
+              border-radius: 20px;
+              padding:6px; margin-bottom:6px; }
+
+    /* ── 2. 마진 / 패딩 ── */
+    .outer {
+      background: #d6eaf8;
+      border: 1px dashed #1a73e8;
+      margin: 30px;
+      padding: 5px;
+    }
+    .inner {
+      background: #fdebd0;
+      border: 1px solid #f39c12;
+      padding: 30px;
+    }
+    .mp-four {
+      background: #d5f5e3;
+      border: 1px solid #28b463;
+      margin: 10px 20px 30px 40px;
+      padding: 5px 10px 15px 20px;
+    }
+
+    /* ── 3. 그림자 ── */
+    .sh-basic {
+      width:260px; height:55px; line-height:55px;
+      background: cyan;
+      box-shadow: 5px 5px 3px #888;
+      margin-bottom:12px; padding:0 10px;
+    }
+    .sh-round {
+      width:260px; height:55px; line-height:55px;
+      background: #1a73e8; color:white;
+      border-radius: 30px;
+      box-shadow: 5px 5px 10px #aaa;
+      margin-bottom:12px; padding:0 20px;
+    }
+    .sh-hard {
+      width:260px; height:55px; line-height:55px;
+      background: #8e44ad; color:white;
+      border-radius: 8px;
+      box-shadow: 8px 8px 0px #333;
+      margin-bottom:12px; padding:0 10px;
+    }
+    .sh-inset {
+      width:260px; height:55px; line-height:55px;
+      background: #f39c12;
+      border-radius: 8px;
+      box-shadow: inset 4px 4px 8px #c0392b;
+      margin-bottom:12px; padding:0 10px;
+    }
+    .sh-text {
+      font-size: 28px; font-weight: bold;
+      color: #2c3e50;
+      text-shadow: 3px 3px 5px #aaa;
+      margin-bottom:12px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ① 경계선 종류 -->
+<h2>1. 경계선(Border) 종류</h2>
+<p class="solid" >solid  — 실선</p>
+<p class="dashed">dashed — 파선</p>
+<p class="dotted">dotted — 점선</p>
+<p class="double">double — 이중선</p>
+<p class="groove">groove — 홈 효과</p>
+<p class="ridge" >ridge  — 돌출 효과</p>
+<p class="inset"  >inset  — 안쪽 눌린 효과</p>
+<p class="outset" >outset — 바깥 돌출 효과</p>
+<p class="mixed"  >혼합 — 상:dotted 우:dashed 하:solid 좌:double</p>
+<p class="radius" >border-radius — 둥근 모서리</p>
+
+<!-- ② 마진과 패딩 -->
+<h2>2. 마진(Margin) & 패딩(Padding)</h2>
+
+<div class="outer">
+  margin:30px — 바깥 여백 (파란 점선 바깥)
+  <div class="inner">
+    padding:30px — 안쪽 여백 (주황 테두리 안)
+  </div>
+</div>
+
+<div class="mp-four">
+  margin: 10px 20px 30px 40px (상 우 하 좌)<br>
+  padding: 5px 10px 15px 20px (상 우 하 좌)
+</div>
+
+<!-- ③ 박스와 그림자 -->
+<h2>3. 박스 그림자(box-shadow) & 텍스트 그림자(text-shadow)</h2>
+
+<div class="sh-basic">box-shadow: 5px 5px 3px #888 — 기본</div>
+<div class="sh-round">border-radius + box-shadow — 둥근 박스</div>
+<div class="sh-hard" >box-shadow: blur 없는 진한 그림자</div>
+<div class="sh-inset">box-shadow: inset — 안쪽 그림자</div>
+<p  class="sh-text" >text-shadow 텍스트 그림자</p>
+
+</body>
+</html>

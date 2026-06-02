@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSS 선택자 6가지</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&family=Gowun+Dodum&display=swap" rel="stylesheet">
+  <style>
+    /* ① 전체 선택자 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --card: #22222f;
+      --border: #2e2e42;
+      --accent: #7c6af7;
+      --accent2: #f76a8a;
+      --accent3: #6af7c2;
+      --text: #e8e8f0;
+      --muted: #888899;
+      --code-bg: #13131c;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Gowun Dodum', sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 48px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* 카드 공통 */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-family: 'Nanum Gothic Coding', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .demo-box {
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 10px 14px;
+      font-family: 'Nanum Gothic Coding', monospace;
+      font-size: 0.82rem;
+      color: var(--accent3);
+      display: block;
+      line-height: 1.7;
+      white-space: pre;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       ② 타입 선택자 데모
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .demo-type p {
+      color: #7c6af7;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .demo-type span {
+      color: #f76a8a;
+      font-size: 0.85rem;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       ③ 클래스 선택자 데모
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .pill {
+      display: inline-block;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .pill-purple { background: #7c6af720; color: #a99dfc; border: 1px solid #7c6af750; }
+    .pill-pink   { background: #f76a8a20; color: #f99db0; border: 1px solid #f76a8a50; }
+    .pill-green  { background: #6af7c220; color: #8df7d0; border: 1px solid #6af7c250; }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       ④ ID 선택자 데모
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #unique-box {
+      background: linear-gradient(135deg, #7c6af730, #f76a8a20);
+      border: 1.5px solid #7c6af760;
+      border-radius: 8px;
+      padding: 10px 16px;
+      color: #c4b8fc;
+      font-size: 0.88rem;
+      width: 100%;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       ⑤ 속성 선택자 데모
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .demo-attr {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    input[type="text"] {
+      background: var(--bg);
+      border: 1px solid #7c6af770;
+      border-radius: 6px;
+      padding: 6px 12px;
+      color: var(--accent);
+      font-family: 'Gowun Dodum', sans-serif;
+      outline: none;
+      width: 100%;
+    }
+    input[type="password"] {
+      background: var(--bg);
+      border: 1px solid #f76a8a70;
+      border-radius: 6px;
+      padding: 6px 12px;
+      color: var(--accent2);
+      font-family: 'Gowun Dodum', sans-serif;
+      outline: none;
+      width: 100%;
+    }
+    a[href^="https"] {
+      color: var(--accent3);
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+    a[href^="https"]:hover { text-decoration: underline; }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       ⑥ 가상 선택자 데모
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .demo-pseudo {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .pseudo-hover {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      width: 100%;
+      text-align: center;
+    }
+    .pseudo-hover:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .pseudo-list {
+      list-style: none;
+      width: 100%;
+    }
+    .pseudo-list li {
+      padding: 5px 10px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      border-radius: 5px;
+    }
+    .pseudo-list li:first-child {
+      color: var(--accent);
+      font-weight: 700;
+      background: #7c6af715;
+    }
+    .pseudo-list li:last-child {
+      color: var(--accent2);
+    }
+
+    .pseudo-before::before {
+      content: "▶ ";
+      color: var(--accent3);
+    }
+    .pseudo-before {
+      font-size: 0.85rem;
+    }
+
+    /* ① 전체 선택자 데모 */
+    .demo-universal {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .demo-universal .tag {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-family: 'Nanum Gothic Coding', monospace;
+      font-size: 0.78rem;
+      width: 100%;
+    }
+    .demo-universal .tag span { color: var(--accent3); }
+  </style>
+</head>
+<body>
+
+  <h1>CSS 선택자 6가지</h1>
+  <p class="subtitle">각 선택자의 작동 방식을 직접 확인해 보세요</p>
+
+  <div class="grid">
+
+    <!-- 1. 전체 선택자 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">01</span>
+        <span class="card-title">전체 선택자</span>
+      </div>
+      <div class="demo-box demo-universal">
+        <div class="tag">✦ <span>* { box-sizing: border-box }</span> → 모든 요소에 적용</div>
+        <div class="tag">✦ <span>* { margin: 0; padding: 0 }</span> → 이 페이지 전체 초기화됨</div>
+      </div>
+      <code>* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}</code>
+    </div>
+
+    <!-- 2. 타입 선택자 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">02</span>
+        <span class="card-title">타입 선택자</span>
+      </div>
+      <div class="demo-box demo-type">
+        <div>
+          <p>p 태그 → 보라색 굵게</p>
+          <span>span 태그 → 분홍색 작게</span>
+        </div>
+      </div>
+      <code>p    { color: purple; font-weight: bold; }
+span { color: pink; font-size: 0.85rem; }</code>
+    </div>
+
+    <!-- 3. 클래스 선택자 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">03</span>
+        <span class="card-title">클래스 선택자</span>
+      </div>
+      <div class="demo-box">
+        <span class="pill pill-purple">.pill-purple</span>
+        <span class="pill pill-pink">.pill-pink</span>
+        <span class="pill pill-green">.pill-green</span>
+      </div>
+      <code>.pill-purple { background: purple; }
+.pill-pink   { background: pink; }
+.pill-green  { background: green; }</code>
+    </div>
+
+    <!-- 4. ID 선택자 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">04</span>
+        <span class="card-title">ID 선택자</span>
+      </div>
+      <div class="demo-box">
+        <div id="unique-box">⭐ #unique-box — 페이지에서 딱 하나만 존재하는 고유 요소입니다.</div>
+      </div>
+      <code>#unique-box {
+  background: linear-gradient(...);
+  border: 1.5px solid purple;
+}</code>
+    </div>
+
+    <!-- 5. 속성 선택자 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">05</span>
+        <span class="card-title">속성 선택자</span>
+      </div>
+      <div class="demo-box demo-attr">
+        <input type="text" placeholder='input[type="text"] → 보라 테두리'>
+        <input type="password" placeholder='input[type="password"] → 분홍 테두리'>
+        <a href="https://example.com">a[href^="https"] → 초록색 링크</a>
+      </div>
+      <code>input[type="text"]     { border-color: purple; }
+input[type="password"] { border-color: pink; }
+a[href^="https"]       { color: green; }</code>
+    </div>
+
+    <!-- 6. 가상 선택자 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="badge">06</span>
+        <span class="card-title">가상 클래스 / 요소 선택자</span>
+      </div>
+      <div class="demo-box demo-pseudo">
+        <button class="pseudo-hover">:hover — 마우스를 올려보세요</button>
+        <ul class="pseudo-list">
+          <li>:first-child → 첫 번째 강조</li>
+          <li>:nth-child(2) → 일반</li>
+          <li>:last-child → 마지막 강조</li>
+        </ul>
+        <p class="pseudo-before">::before로 앞에 화살표 추가됨</p>
+      </div>
+      <code>a:hover       { color: red; }
+li:first-child { font-weight: bold; }
+p::before      { content: "▶ "; }</code>
+    </div>
+
+  </div>
+
+</body>
+</html>
