@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <meta http-equiv='Content-Type' content='text/html;charset=utf-8'></meta>
+   <title>나비애니메이션,Web3D,VR,가상현실,X3D</title>
+	<script type="text/javascript" src="https://code.jquery.com/jquery-1.7.2.js"></script>
+    <script type='text/javascript' src='https://www.x3dom.org/x3dom/release/x3dom.js'></script>
+	<link rel='stylesheet' type='text/css' href='https://www.x3dom.org/x3dom/release/x3dom.css'/>
+</head>
+<body id='main'>
+<x3d width="100%" height="250px" vrmode="true" stereo="true" eyeSeparation="0.2" showStat="false" showLog="false" stereoMode="ANAGLYPH">
+      <scene>
+	<viewpoint position="0 0 20" orientation="0 1 0 0.0" fieldOfView="1.5" description="3D View"></viewpoint>
+	  <transform def='butterFly01' translation='0 0 0' rotation='1 0 0 0' scale='1 1 1'>
+	    <transform def='b_body' translation='0 .65 0'>
+    	<Shape>
+        <indexedFaceSet coordIndex='0 1 2 3 -1' solid='false'>
+	     <coordinate point='-.35 0 0, .35 0 0, .35 1 0, -.35 1 0'></coordinate>
+		 <textureCoordinate texcoordIndex='0 1 2 3 -1' point='0 0, 1 0,1 1, 0 1'></textureCoordinate>
+        </indexedFaceSet>
+		<appearance><imageTexture url='../../img/butter_body.gif'></imageTexture>
+       </Shape></transform>
+	   <transform def='b_left' translaton='0 0 0' center='-.25 0 0' rotation='0 1 0 0'>
+    	<Shape>
+        <indexedFaceSet coordIndex='0 1 2 3 -1' solid='false'>
+	     <coordinate point='-1.15 0 0, -.15 0 0, -.15 2 0, -1.15 2 0'></coordinate>
+		 <textureCoordinate texcoordIndex='0 1 2 3 -1' point='0 0, 1 0,1 1, 0 1'></textureCoordinate>
+        </indexedFaceSet>
+		<appearance><imageTexture url='../../img/butter_left.gif'></imageTexture>
+       </appearance></Shape></transform>
+	   <transform def='b_right' translation='0 0 0' center='.25 0 0' rotation='0 1 0 0'>
+    	<Shape>
+        <indexedFaceSet coordIndex='0 1 2 3 -1' solid='false'>
+	     <coordinate point='.15 0 0, 1.15 0 0, 1.15 2 0, .15 2 0'></coordinate>
+		 <textureCoordinate texcoordIndex='0 1 2 3 -1' point='0 0, 1 0,1 1, 0 1'></textureCoordinate>
+        </indexedFaceSet>
+		<appearance><imageTexture url='../../img/butter_right.gif'></imageTexture>
+       </appearance></Shape></transform>
+	   </transform>
+       <timeSensor id='rtime' cycleInterval='30' loop='true'></timeSensor>
+	   <positionInterpolator def='posB' key='0 .1 .2 .3 .4 .5 .6 .7 .8 .9 1' 
+	   keyValue='0 0 0, 2 -2 -8, 6  6 -16, 0 0 4, -4 2 5, -10 -2 -4 , -6 2 -12, -4 -4 -10, -2 -2 -4, 2 2 2, 0 0 0'></positionInterpolator>
+	   <orientationInterpolator def='oriB' key='0 .1 .2 .3 .4 .5 .6 .7 .8 .9 1' 
+	   keyValue='0 1 0 0.78, 0 1 1 -0.78,1 1 0 0.78, 0 0 1 -0.78,0 1 1 0.78, 0 1 1 -0.78,1 1 0 0.78, 0 1 1 -0.78,0 1 1 0.78,
+	   0 1 1 -0.78,1 1 0 0.78'></orientationInterpolator>
+	   <route fromnode='rtime' fromField='fraction_changed' toNode='posB' toField='set_fraction'></route>
+	   <route fromnode='posB' fromfield='value_changed' toNode='butterFly01' toField='translation'></route>
+	   <route fromnode='rtime' fromField='fraction_changed' toNode='oriB' toField='set_fraction'></route>
+	   <route fromnode='oriB' fromfield='value_changed' toNode='butterFly01' toField='rotation'></route>
+
+        <!-- 나비 군집 -->
+	   <transform id='group_b'> 
+		<transform id='butterFly02'  center='0 1 0' >
+			<transform use='butterFly01' ></transform> 
+		</transform>
+		<transform id='butterFly03'  rotation='0 1 0 1.57' center='0 1 0' >
+			<transform use='butterFly01' ></transform> 
+		</transform>
+		<transform id='butterFly04' rotation='0 1 0 -1.57' center='0 1 0' >
+			<transform use='butterFly01' ></transform> 
+		</transform>
+		<transform id='butterFly05' rotation='0 0 1 -.78' center='0 1 0' >
+			<transform use='butterFly04' ></transform> 
+		</transform>
+		<transform id='butterFly06'  rotation='0 1 0 .78' center='0 1 0' >
+			<transform use='butterFly03' ></transform> 
+		</transform>
+	   </transform>
+	   <transform id='bf_g01' rotation='1 1 0 -1.57'><transform id='g_A' use='group_b'></transform></transform>
+	   <transform id='bf_g02' rotation='0 1 1 1.57'><transform id='g_B' use='group_b'></transform></transform>
+	   
+
+       <transform id='bf_g01' rotation='1 1 0 -1.57'><transform id='g_A' use='group_b'></transform></transform>
+	   <transform id='bf_g02' rotation='0 1 1 1.57'><transform id='g_B' use='group_b'></transform></transform>
+</body>
+</scene>
+    
+</html>
+</x3d>
