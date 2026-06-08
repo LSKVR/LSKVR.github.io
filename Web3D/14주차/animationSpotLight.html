@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv='Content-Type' content='text/html;charset=utf-8'></meta>
+<title>Animation SpotLight, Web3D,VR,가상현실,X3D</title>
+<script type="text/javascript" src="https://code.jquery.com/jquery-1.7.2.js"></script>
+<script type='text/javascript' src="https://www.x3dom.org/x3dom/release/x3dom.js"></script>
+<link rel='stylesheet' type='text/css' href="https://www.x3dom.org/x3dom/release/x3dom.css"/>
+</head>
+<body id='main'>
+<h3 style="text-align:center;">Animation SpotLight</h3>
+<x3d width="100%" height="250px" vrmode="true" stereo="true" eyeSeparation="0.2" showStat="false" showLog="false">
+<scene>
+<viewpoint position="-10 1 20" orientation="0 1 0 0" fieldOfView="1.2" description="Center View"></viewpoint>
+<NavigationInfo id='nav' headlight='false' type='"examine" "Any"'></NavigationInfo>
+<SpotLight id='Spot' ambientIntensity='1' attenuation='1 0 0' color='1 1 0'
+cutoffAngle='0.2' intensity='1' location='-10 0 10' direction='0 0 -10'
+on='true' radius='25'></SpotLight>
+<PointLight intensity='.6' location='-10 0 0' radius='20' attenuation='1 0 0'
+on='true' color='0 1 1'></PointLight>
+<Transform translation='-10 0 -10 '><Shape><Box size='40 20 0.1'></Box>
+<Appearance><Material diffuseColor='0 1 1'></Material></Appearance>
+</Shape></Transform>
+<Transform translation='-10 0 -5'>
+<Shape>
+<Text string="Amazing HTML5&Web3D! Software Convergence Dept.">
+<Font size='40px'></Font></Text>
+<Appearance><Material diffuseColor='1 1 0'></Material>
+</Appearance></Shape></Transform>
+<TimeSensor id='time' loop='true' cycleInterval='8'></TimeSensor>
+<PositionInterpolator id='pos' key='0 .5 1'
+keyValue='-10 0 -10, 10 0 -10, -10 0 -10'></PositionInterpolator>
+<ROUTE fromNode='time' fromField='fraction_changed'
+toNode='pos' toField='set_fraction'></ROUTE>
+<ROUTE fromNode='pos' fromField='value_changed'
+toNode='Spot' toField='direction'></ROUTE>
+</Scene></X3D></body></html>
