@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Batman SpotLight</title>
+<style>*{margin:0;padding:0;box-sizing:border-box;}body{background:#000;overflow:hidden;}canvas{display:block;width:100vw;height:100vh;}</style>
+</head>
+<body>
+<canvas id="bmain"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+window.addEventListener('load', function() {
+const canvas = document.getElementById('bmain');
+const W = window.innerWidth, H = window.innerHeight;
+const renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setSize(W,H,false);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x05050f);
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x05050f,60,130);
+const camera=new THREE.PerspectiveCamera(58,W/H,0.1,300);
+camera.position.set(0,10,30);
+camera.lookAt(0,8,0);
+window.addEventListener('resize',function(){
+  renderer.setSize(window.innerWidth,window.innerHeight,false);
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+// Stars
+var sp=[];for(var i=0;i<600;i++)sp.push((Math.random()-.5)*400,Math.random()*80+20,(Math.random()-.5)*400);
+var sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));
+scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:0.25})));
+// Moon
+var moon=new THREE.Mesh(new THREE.SphereGeometry(2,16,16),new THREE.MeshBasicMaterial({color:0xffffd0}));
+moon.position.set(-40,60,-100);scene.add(moon);
+// Ground
+var gnd=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshStandardMaterial({color:0x0a0a14,roughness:1}));
+gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;scene.add(gnd);
+// Road
+var road=new THREE.Mesh(new THREE.PlaneGeometry(10,300),new THREE.MeshStandardMaterial({color:0x111120,roughness:0.95}));
+road.rotation.x=-Math.PI/2;road.position.y=0.02;road.receiveShadow=true;scene.add(road);
+for(var dz=-80;dz<80;dz+=5){var dash=new THREE.Mesh(new THREE.PlaneGeometry(0.18,2),new THREE.MeshBasicMaterial({color:0x2a2a18}));dash.rotation.x=-Math.PI/2;dash.position.set(0,0.03,dz);scene.add(dash);}
+// Buildings
+function addBuilding(x,zc,w,d,h){
+  var g=new THREE.Group();
+  var body=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:0x0d0d1e,roughness:0.9}));
+  body.position.y=h/2;body.castShadow=true;body.receiveShadow=true;g.add(body);
+  var rows=Math.floor(h/3),cols=Math.floor(w/2);
+  for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){
+    if(Math.random()>0.5)continue;
+    var win=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.7),new THREE.MeshStandardMaterial({color:0xffeeaa,emissive:new THREE.Color(0xffdd55),emissiveIntensity:Math.random()*.6+.2}));
+    win.position.set(-w/2+1+c*2,1.5+r*3,d/2+0.02);g.add(win);
+  }
+  g.position.set(x,0,zc);scene.add(g);
+  return zc+d/2;
+}
+var SIDE_FRONT_Z=addBuilding(-9,-4,6,6,26);
+addBuilding(-16,-2,5,5,20);addBuilding(-23,1,6,6,32);addBuilding(-30,-1,5,5,16);addBuilding(-38,2,7,6,22);
+addBuilding(9,-4,6,6,28);addBuilding(16,-2,5,5,22);addBuilding(23,1,6,6,34);addBuilding(30,-1,5,5,18);addBuilding(38,2,7,6,24);
+var BG_FRONT_Z=addBuilding(-4,-30,7,8,44);
+addBuilding(4,-30,7,8,40);addBuilding(-18,-28,6,6,32);addBuilding(18,-28,6,6,34);addBuilding(-32,-26,7,6,26);addBuilding(32,-26,7,6,28);
+// Lights
+scene.add(new THREE.AmbientLight(0x0a0a2a,2.0));
+scene.add(new THREE.HemisphereLight(0x111133,0x050510,0.8));
+// SpotLight
+var LIGHT_X=0,LIGHT_Y=55,LIGHT_Z=25;
+var spot=new THREE.SpotLight(0xffffff,8);
+spot.distance=160;spot.angle=Math.PI/9;spot.penumbra=0.25;spot.decay=1.2;
+spot.position.set(LIGHT_X,LIGHT_Y,LIGHT_Z);
+spot.castShadow=true;spot.shadow.mapSize.width=1024;spot.shadow.mapSize.height=1024;
+spot.shadow.camera.near=2;spot.shadow.camera.far=180;
+scene.add(spot);scene.add(spot.target);
+spot.target.position.set(0,10,SIDE_FRONT_Z);spot.target.updateMatrixWorld();
+// Cone
+var coneMesh=new THREE.Mesh(new THREE.ConeGeometry(1,1,32,1,true),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.05,side:THREE.BackSide,depthWrite:false,blending:THREE.AdditiveBlending}));
+scene.add(coneMesh);
+// Batman texture
+function makeBatTex(){
+  var sz=512,cnv=document.createElement('canvas');cnv.width=cnv.height=sz;
+  var ctx=cnv.getContext('2d');ctx.clearRect(0,0,sz,sz);
+  var grd=ctx.createRadialGradient(sz/2,sz/2,0,sz/2,sz/2,sz*.48);
+  grd.addColorStop(0,'rgba(255,255,180,0.5)');grd.addColorStop(0.5,'rgba(255,255,80,0.2)');grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grd;ctx.fillRect(0,0,sz,sz);
+  ctx.save();ctx.translate(sz/2,sz/2+sz*0.06);var S=sz/2.15;
+  function bc(x1,y1,x2,y2,x3,y3){ctx.bezierCurveTo(x1*S,y1*S,x2*S,y2*S,x3*S,y3*S);}
+  ctx.fillStyle='rgba(255,255,140,0.96)';ctx.beginPath();
+  ctx.moveTo(0,-0.02*S);
+  bc(0.05,-0.02,0.14,-0.18,0.18,-0.28);bc(0.22,-0.38,0.20,-0.48,0.14,-0.46);bc(0.08,-0.44,0.04,-0.38,0.06,-0.32);
+  bc(0.14,-0.26,0.28,-0.16,0.36,-0.08);bc(0.44,0.00,0.52,-0.30,0.62,-0.38);bc(0.74,-0.46,0.92,-0.38,1.00,-0.20);
+  bc(1.06,-0.06,1.04,0.14,0.94,0.24);bc(0.90,0.30,0.88,0.38,0.80,0.40);bc(0.66,0.44,0.48,0.40,0.38,0.34);
+  bc(0.30,0.42,0.18,0.48,0.08,0.46);bc(0.04,0.46,0.02,0.44,0.00,0.44);
+  bc(-0.02,0.44,-0.04,0.46,-0.08,0.46);bc(-0.18,0.48,-0.30,0.42,-0.38,0.34);bc(-0.48,0.40,-0.66,0.44,-0.80,0.40);
+  bc(-0.88,0.38,-0.90,0.30,-0.94,0.24);bc(-1.04,0.14,-1.06,-0.06,-1.00,-0.20);bc(-0.92,-0.38,-0.74,-0.46,-0.62,-0.38);
+  bc(-0.52,-0.30,-0.44,0.00,-0.36,-0.08);bc(-0.28,-0.16,-0.14,-0.26,-0.06,-0.32);bc(-0.04,-0.38,-0.08,-0.44,-0.14,-0.46);
+  bc(-0.20,-0.48,-0.22,-0.38,-0.18,-0.28);bc(-0.14,-0.18,-0.05,-0.02,0.00,-0.02);
+  ctx.closePath();ctx.fill();
+  ctx.globalCompositeOperation='destination-out';ctx.beginPath();ctx.ellipse(0,S*0.14,S*0.12,S*0.20,0,0,Math.PI*2);ctx.fill();
+  ctx.globalCompositeOperation='source-over';ctx.restore();
+  var t=new THREE.CanvasTexture(cnv);t.needsUpdate=true;return t;
+}
+var decal=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:makeBatTex(),transparent:true,opacity:0.95,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide}));
+scene.add(decal);
+// Projection math
+var ROAD_HALF=5.5,SIDE_Y=11.0,BG_Y=17.0,BASE_SIZE=8.0;
+var lv=new THREE.Vector3(LIGHT_X,LIGHT_Y,LIGHT_Z);
+var refDist=lv.distanceTo(new THREE.Vector3(0,SIDE_Y,SIDE_FRONT_Z));
+function getProj(px){
+  var inRoad=Math.abs(px)<ROAD_HALF;
+  var wz=inRoad?BG_FRONT_Z:SIDE_FRONT_Z;
+  var wy=inRoad?BG_Y:SIDE_Y;
+  var dist=lv.distanceTo(new THREE.Vector3(px,wy,wz));
+  return{x:px,y:wy,z:wz,s:dist/refDist};
+}
+// Animation
+var clock=new THREE.Clock();
+var CYCLE=8,RANGE=22;
+var UP=new THREE.Vector3(0,-1,0);
+function pingPong(t,p){var f=(t%p)/p;return f<0.5?f*2:2-f*2;}
+function tick(){
+  requestAnimationFrame(tick);
+  var t=clock.getElapsedTime();
+  var px=-RANGE+pingPong(t,CYCLE)*RANGE*2;
+  var proj=getProj(px);
+  spot.target.position.set(proj.x,proj.y,proj.z);spot.target.updateMatrixWorld();
+  decal.position.set(proj.x,proj.y,proj.z+0.08);decal.scale.setScalar(BASE_SIZE*proj.s);
+  var ta=new THREE.Vector3(proj.x,proj.y,proj.z);
+  var src=new THREE.Vector3(LIGHT_X,LIGHT_Y,LIGHT_Z);
+  var len=src.distanceTo(ta);
+  var mid=src.clone().lerp(ta,0.5);
+  var dir=ta.clone().sub(src).normalize();
+  var r=len*Math.tan(Math.PI/9)*0.7;
+  coneMesh.position.copy(mid);coneMesh.scale.set(r,len,r);coneMesh.quaternion.setFromUnitVectors(UP,dir);
+  renderer.render(scene,camera);
+}
+tick();
+});
+</script>
+</body>
+</html>
