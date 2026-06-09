@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Position 예제</title>
+
+    <style>
+        body {
+            height: 2000px;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            position: relative;
+            width: 500px;
+            height: 250px;
+            border: 3px solid black;
+            margin-bottom: 50px;
+        }
+
+        .box {
+            width: 100px;
+            height: 100px;
+            color: white;
+            text-align: center;
+            line-height: 100px;
+        }
+
+        /* ① static */
+        .static-box {
+            position: static;
+            background: gray;
+        }
+
+        /* ② relative */
+        .relative-box {
+            position: relative;
+            top: 20px;
+            left: 30px;
+            background: blue;
+        }
+
+        /* ③ absolute */
+        .absolute-box {
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            background: red;
+        }
+
+        /* ④ fixed */
+        .fixed-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: green;
+        }
+
+        /* ⑤ sticky */
+        .sticky-box {
+            position: sticky;
+            top: 0;
+            background: orange;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>① static</h2>
+    <div class="box static-box">static</div>
+
+    <hr>
+
+    <h2>② relative</h2>
+    <div class="box relative-box">relative</div>
+
+    <hr>
+
+    <h2>③ absolute</h2>
+    <div class="container">
+        부모(.container)
+        <div class="box absolute-box">absolute</div>
+    </div>
+
+    <hr>
+
+    <h2>④ fixed</h2>
+    <div class="box fixed-box">fixed</div>
+
+    <p>
+        스크롤해도 fixed 박스는 화면 오른쪽 위에 계속 보입니다.
+    </p>
+
+    <hr>
+
+    <h2>⑤ sticky</h2>
+
+    <div class="box sticky-box">sticky</div>
+
+    <p>
+        스크롤을 내려보세요.<br>
+        원래는 static처럼 있다가 화면 상단(top:0)에 닿으면 고정됩니다.
+    </p>
+
+</body>
+
+</html>

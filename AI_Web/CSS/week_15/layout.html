@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML Layout 태그 완전 정리</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #181c27;
+      --surface2: #1f2435;
+      --border: #2a3050;
+      --accent: #4f8ef7;
+      --accent2: #3ecf8e;
+      --accent3: #f7c948;
+      --accent4: #f76c6c;
+      --text: #e2e8f0;
+      --text-muted: #7a869a;
+      --code-bg: #0d1117;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    /* ── TOP NAV ── */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15,17,23,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 52px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .top-nav::-webkit-scrollbar { display: none; }
+
+    .nav-logo {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+      margin-right: 12px;
+      letter-spacing: 1px;
+    }
+
+    .nav-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      padding: 4px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .nav-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,142,247,0.08); }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 64px 24px 48px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-label {
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #fff 40%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── TAG CARD ── */
+    .tag-section {
+      padding: 48px 0 0;
+    }
+
+    .tag-section-title {
+      font-size: 13px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      transition: border-color 0.25s;
+    }
+    .card:hover { border-color: var(--accent); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 20px 24px 16px;
+      flex-wrap: wrap;
+    }
+
+    .tag-name {
+      font-family: 'Fira Code', monospace;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--accent3);
+      background: rgba(247,201,72,0.08);
+      border: 1px solid rgba(247,201,72,0.25);
+      border-radius: 8px;
+      padding: 4px 14px;
+      white-space: nowrap;
+    }
+
+    .tag-badge {
+      font-size: 10px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .badge-layout  { background: rgba(79,142,247,0.15); color: var(--accent);  border: 1px solid rgba(79,142,247,0.3); }
+    .badge-semantic{ background: rgba(62,207,142,0.15); color: var(--accent2); border: 1px solid rgba(62,207,142,0.3); }
+    .badge-block   { background: rgba(247,108,108,0.15); color: var(--accent4); border: 1px solid rgba(247,108,108,0.3); }
+    .badge-inline  { background: rgba(247,201,72,0.15);  color: var(--accent3); border: 1px solid rgba(247,201,72,0.3); }
+
+    .card-desc {
+      padding: 0 24px 6px;
+      color: var(--text);
+      font-size: 14px;
+      word-break: keep-all;
+    }
+
+    .card-tip {
+      margin: 10px 24px 16px;
+      padding: 10px 14px;
+      background: rgba(79,142,247,0.07);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: var(--text-muted);
+      word-break: keep-all;
+    }
+    .card-tip strong { color: var(--accent); }
+
+    /* ── CODE BLOCK ── */
+    .code-block {
+      background: var(--code-bg);
+      border-top: 1px solid var(--border);
+      padding: 16px 24px;
+      overflow-x: auto;
+    }
+    .code-block pre {
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #abb2bf;
+    }
+    .c-tag   { color: #e06c75; }
+    .c-attr  { color: #d19a66; }
+    .c-val   { color: #98c379; }
+    .c-cmnt  { color: #5c6370; font-style: italic; }
+    .c-text  { color: #abb2bf; }
+
+    /* ── PREVIEW BOX ── */
+    .preview-wrap {
+      border-top: 1px solid var(--border);
+      padding: 16px 24px;
+    }
+    .preview-label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .preview-box {
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+    }
+
+    /* 시각적 프리뷰 스타일 */
+    .pv-block { background: rgba(79,142,247,0.12); border: 1px solid rgba(79,142,247,0.3); border-radius: 6px; padding: 8px 12px; margin: 4px 0; font-size: 12px; color: var(--accent); }
+    .pv-inline { background: rgba(247,201,72,0.12); border: 1px solid rgba(247,201,72,0.3); border-radius: 4px; padding: 2px 8px; font-size: 12px; color: var(--accent3); display: inline; }
+    .pv-flex { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pv-flex-item { background: rgba(62,207,142,0.12); border: 1px solid rgba(62,207,142,0.3); border-radius: 6px; padding: 8px 16px; font-size: 12px; color: var(--accent2); flex: 1; min-width: 60px; text-align: center; }
+    .pv-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .pv-grid-item { background: rgba(247,108,108,0.12); border: 1px solid rgba(247,108,108,0.3); border-radius: 6px; padding: 10px; font-size: 11px; color: var(--accent4); text-align: center; }
+    .pv-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .pv-table th { background: rgba(79,142,247,0.15); color: var(--accent); padding: 6px 10px; border: 1px solid var(--border); }
+    .pv-table td { padding: 6px 10px; border: 1px solid var(--border); color: var(--text-muted); }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      text-align: center;
+      padding: 48px 24px;
+      margin-top: 60px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .card-header { gap: 8px; }
+      .tag-name { font-size: 15px; }
+      .code-block pre { font-size: 11px; }
+      .pv-grid { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 상단 네비게이션 -->
+<nav class="top-nav">
+  <span class="nav-logo">&lt;/&gt; Layout Tags</span>
+  <a class="nav-btn" href="#semantic">시맨틱</a>
+  <a class="nav-btn" href="#block">블록</a>
+  <a class="nav-btn" href="#flex">Flexbox</a>
+  <a class="nav-btn" href="#grid">Grid</a>
+  <a class="nav-btn" href="#table">Table</a>
+  <a class="nav-btn" href="#inline">인라인</a>
+  <a class="nav-btn" href="#form">Form</a>
+  <a class="nav-btn" href="#media">미디어</a>
+</nav>
+
+<!-- 히어로 -->
+<div class="hero">
+  <div class="hero-label">HTML Reference</div>
+  <h1>Layout 태그 완전 정리</h1>
+  <p class="hero-desc">HTML의 레이아웃 관련 태그들을 코드 예시와 시각적 프리뷰로 한눈에 정리</p>
+</div>
+
+<div class="container">
+
+  <!-- ══════════════════════════════
+       1. 시맨틱 구조 태그
+  ══════════════════════════════ -->
+  <div class="tag-section" id="semantic">
+    <div class="tag-section-title">① 시맨틱 구조 태그 — 의미 있는 레이아웃</div>
+
+    <!-- header -->
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;header&gt;</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+        <span class="tag-badge badge-block">블록</span>
+      </div>
+      <p class="card-desc">페이지 또는 섹션의 <strong>머리말 영역</strong>. 로고, 제목, 내비게이션을 담습니다.</p>
+      <div class="card-tip"><strong>💡 SEO:</strong> 검색엔진이 페이지 상단 핵심 정보로 인식합니다.</div>
+      <div class="code-block"><pre><span class="c-tag">&lt;header&gt;</span>
+  <span class="c-tag">&lt;h1&gt;</span><span class="c-text">사이트 제목</span><span class="c-tag">&lt;/h1&gt;</span>
+  <span class="c-tag">&lt;nav&gt;</span><span class="c-text">...</span><span class="c-tag">&lt;/nav&gt;</span>
+<span class="c-tag">&lt;/header&gt;</span></pre></div>
+      <div class="preview-wrap">
+        <div class="preview-label">Preview</div>
+        <div class="preview-box">
+          <div class="pv-block">📌 &lt;header&gt; — 로고 / 제목 / 내비게이션</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- nav -->
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;nav&gt;</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+        <span class="tag-badge badge-block">블록</span>
+      </div>
+      <p class="card-desc">사이트 <strong>내비게이션 링크 묶음</strong>. 주요 메뉴, 페이지 이동 링크를 담습니다.</p>
+      <div class="card-tip"><strong>💡 접근성:</strong> 스크린리더가 "탐색" 영역으로 인식합니다.</div>
+      <div class="code-block"><pre><span class="c-tag">&lt;nav&gt;</span>
+  <span class="c-tag">&lt;a</span> <span class="c-attr">href</span>=<span class="c-val">"/"</span><span class="c-tag">&gt;</span><span class="c-text">홈</span><span class="c-tag">&lt;/a&gt;</span>
+  <span class="c-tag">&lt;a</span> <span class="c-attr">href</span>=<span class="c-val">"/about"</span><span class="c-tag">&gt;</span><span class="c-text">소개</span><span class="c-tag">&lt;/a&gt;</span>
+<span class="c-tag">&lt;/nav&gt;</span></pre></div>
+      <div class="preview-wrap">
+        <div class="preview-label">Preview</div>
+        <div class="preview-box">
+          <div class="pv-block">🔗 &lt;nav&gt; — <span class="pv-inline">홈</span> &nbsp; <span class="pv-inline">소개</span> &nbsp; <span class="pv-inline">연락처</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- main -->
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;main&gt;</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+        <span class="tag-badge badge-block">블록</span>
+      </div>
+      <p class="card-desc">페이지의 <strong>핵심 본문 영역</strong>. 페이지 전체에서 딱 한 번만 사용합니다.</p>
+      <div class="card-tip"><strong>💡 규칙:</strong> &lt;main&gt;은 페이지당 1개만! header·footer·nav 안에 넣으면 안 됩니다.</div>
+      <div class="code-block"><pre><span class="c-tag">&lt;main&gt;</span>
+  <span class="c-tag">&lt;article&gt;</span><span class="c-text">...</span><span class="c-tag">&lt;/article&gt;</span>
+  <span class="c-tag">&lt;aside&gt;</span><span class="c-text">...</span><span class="c-tag">&lt;/aside&gt;</span>
+<span class="c-tag">&lt;/main&gt;</span></pre></div>
+    </div>
+
+    <!-- section -->
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;section&gt;</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+        <span class="tag-badge badge-block">블록</span>
+      </div>
+      <p class="card-desc">주제별로 묶인 <strong>독립적인 구역</strong>. 보통 제목(h2~h6)과 함께 사용합니다.</p>
+      <div class="card-tip"><strong>💡 차이:</strong> &lt;div&gt;는 의미 없는 묶음 / &lt;section&gt;은 <strong>주제가 있는</strong> 묶음</div>
+      <div class="code-block"><pre><span class="c-tag">&lt;section&gt;</span>
+  <span class="c-tag">&lt;h2&gt;</span><span class="c-text">수업 정보</span><span class="c-tag">&lt;/h2&gt;</span>
+  <span class="c-tag">&lt;p&gt;</span><span class="c-text">내용...</span><span class="c-tag">&lt;/p&gt;</span>
+<span class="c-tag">&lt;/section&gt;</span></pre></div>
+    </div>
+
+    <!-- article -->
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;article&gt;</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+        <span class="tag-badge badge-block">블록</span>
+      </div>
+      <p class="card-desc">그것만 따로 떼어내도 <strong>독립적으로 의미가 통하는 콘텐츠</strong>. 블로그 글, 뉴스 기사, 카드 등에 사용합니다.</p>
+      <div class="card-tip"><strong>💡 기준:</strong> "이 내용만 RSS로 발행해도 말이 되나?" → Yes면 &lt;article&gt;</div>
+      <div class="code-block"><pre><span class="c-tag">&lt;article&gt;</span>
+  <span class="c-tag">&lt;h2&gt;</span><span class="c-text">블로그 제목</span><span class="c-tag">&lt;/h2&gt;</span>
+  <span class="c-tag">&lt;p&gt;</span><span class="c-text">본문 내용...</span><span class="c-tag">&lt;/p&gt;</span>
+<span class="c-tag">&lt;/article&gt;</span></pre></div>
+    </div>
+
+    <!-- aside -->
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;aside&gt;</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+        <span class="tag-badge badge-block">블록</span>
+      </div>
+      <p class="card-desc">본문과 <strong>간접적으로 관련된 부가 내용</strong>. 사이드바, 광고, 관련 링크 등에 사용합니다.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;aside&gt;</span>
+  <span class="c-tag">&lt;h3&gt;</span><span class="c-text">관련 글</span><span class="c-tag">&lt;/h3&gt;</span>
+  <span class="c-tag">&lt;ul&gt;</span><span class="c-text">...</span><span class="c-tag">&lt;/ul&gt;</span>
+<span class="c-tag">&lt;/aside&gt;</span></pre></div>
+    </div>
+
+    <!-- footer -->
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;footer&gt;</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+        <span class="tag-badge badge-block">블록</span>
+      </div>
+      <p class="card-desc">페이지 또는 섹션의 <strong>꼬리말 영역</strong>. 저작권, 연락처, 하단 링크를 담습니다.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;footer&gt;</span>
+  <span class="c-tag">&lt;p&gt;</span><span class="c-text">© 2026 이상경의 웹프로그래밍</span><span class="c-tag">&lt;/p&gt;</span>
+<span class="c-tag">&lt;/footer&gt;</span></pre></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       2. 블록 레이아웃 태그
+  ══════════════════════════════ -->
+  <div class="tag-section" id="block">
+    <div class="tag-section-title">② 블록 레이아웃 태그 — 줄 전체를 차지</div>
+
+    <!-- div -->
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;div&gt;</span>
+        <span class="tag-badge badge-block">블록</span>
+      </div>
+      <p class="card-desc">의미 없는 <strong>범용 컨테이너</strong>. CSS 적용, 레이아웃 묶음용으로 가장 많이 씁니다.</p>
+      <div class="card-tip"><strong>💡 팁:</strong> 시맨틱 태그로 대체 가능하면 &lt;div&gt; 대신 시맨틱 태그를 쓰는 게 좋습니다.</div>
+      <div class="code-block"><pre><span class="c-tag">&lt;div</span> <span class="c-attr">class</span>=<span class="c-val">"container"</span><span class="c-tag">&gt;</span>
+  <span class="c-tag">&lt;div</span> <span class="c-attr">class</span>=<span class="c-val">"card"</span><span class="c-tag">&gt;</span><span class="c-text">카드 내용</span><span class="c-tag">&lt;/div&gt;</span>
+<span class="c-tag">&lt;/div&gt;</span></pre></div>
+      <div class="preview-wrap">
+        <div class="preview-label">Preview — 블록은 줄 전체 차지</div>
+        <div class="preview-box">
+          <div class="pv-block">div.container</div>
+          <div style="padding-left:16px">
+            <div class="pv-block">div.card — 카드 1</div>
+            <div class="pv-block">div.card — 카드 2</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- p -->
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;p&gt;</span>
+        <span class="tag-badge badge-block">블록</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+      </div>
+      <p class="card-desc"><strong>문단(paragraph)</strong>. 텍스트 한 덩어리를 표현할 때 씁니다. 위아래 여백이 자동으로 생깁니다.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;p&gt;</span><span class="c-text">첫 번째 문단입니다.</span><span class="c-tag">&lt;/p&gt;</span>
+<span class="c-tag">&lt;p&gt;</span><span class="c-text">두 번째 문단입니다.</span><span class="c-tag">&lt;/p&gt;</span></pre></div>
+    </div>
+
+    <!-- h1~h6 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;h1&gt; ~ &lt;h6&gt;</span>
+        <span class="tag-badge badge-block">블록</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+      </div>
+      <p class="card-desc"><strong>제목 태그</strong>. h1이 가장 크고 중요, h6이 가장 작습니다. SEO에서 h1은 페이지당 1개 권장.</p>
+      <div class="card-tip"><strong>💡 SEO:</strong> h1 → h2 → h3 순서를 건너뛰지 말고 계층적으로 사용하세요.</div>
+      <div class="code-block"><pre><span class="c-tag">&lt;h1&gt;</span><span class="c-text">페이지 대제목 (1개만)</span><span class="c-tag">&lt;/h1&gt;</span>
+<span class="c-tag">&lt;h2&gt;</span><span class="c-text">섹션 제목</span><span class="c-tag">&lt;/h2&gt;</span>
+<span class="c-tag">&lt;h3&gt;</span><span class="c-text">소제목</span><span class="c-tag">&lt;/h3&gt;</span></pre></div>
+      <div class="preview-wrap">
+        <div class="preview-label">Preview</div>
+        <div class="preview-box" style="font-family:'Noto Sans KR',sans-serif;">
+          <div style="font-size:22px;font-weight:700;color:#e2e8f0;margin-bottom:4px">h1 — 페이지 대제목</div>
+          <div style="font-size:18px;font-weight:700;color:#c0c8d8;margin-bottom:4px">h2 — 섹션 제목</div>
+          <div style="font-size:15px;font-weight:600;color:#9aa3b0;margin-bottom:4px">h3 — 소제목</div>
+          <div style="font-size:13px;font-weight:600;color:#7a869a">h4 ~ h6 — 더 작은 제목</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ul / ol / li -->
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;ul&gt; &lt;ol&gt; &lt;li&gt;</span>
+        <span class="tag-badge badge-block">블록</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+      </div>
+      <p class="card-desc"><strong>목록 태그</strong>. ul = 순서 없는 목록(●), ol = 순서 있는 목록(1,2,3), li = 각 항목.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;ul&gt;</span>  <span class="c-cmnt">&lt;!-- 순서 없음 --&gt;</span>
+  <span class="c-tag">&lt;li&gt;</span><span class="c-text">HTML</span><span class="c-tag">&lt;/li&gt;</span>
+  <span class="c-tag">&lt;li&gt;</span><span class="c-text">CSS</span><span class="c-tag">&lt;/li&gt;</span>
+<span class="c-tag">&lt;/ul&gt;</span>
+
+<span class="c-tag">&lt;ol&gt;</span>  <span class="c-cmnt">&lt;!-- 순서 있음 --&gt;</span>
+  <span class="c-tag">&lt;li&gt;</span><span class="c-text">1단계</span><span class="c-tag">&lt;/li&gt;</span>
+  <span class="c-tag">&lt;li&gt;</span><span class="c-text">2단계</span><span class="c-tag">&lt;/li&gt;</span>
+<span class="c-tag">&lt;/ol&gt;</span></pre></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       3. Flexbox
+  ══════════════════════════════ -->
+  <div class="tag-section" id="flex">
+    <div class="tag-section-title">③ Flexbox 레이아웃</div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">display: flex</span>
+        <span class="tag-badge badge-layout">레이아웃</span>
+      </div>
+      <p class="card-desc"><strong>1차원 레이아웃</strong>. 가로 또는 세로 한 방향으로 아이템을 정렬합니다. 내비게이션, 카드 행, 중앙 정렬에 최적.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;div</span> <span class="c-attr">style</span>=<span class="c-val">"display:flex; gap:12px; align-items:center;"</span><span class="c-tag">&gt;</span>
+  <span class="c-tag">&lt;div&gt;</span><span class="c-text">아이템 1</span><span class="c-tag">&lt;/div&gt;</span>
+  <span class="c-tag">&lt;div&gt;</span><span class="c-text">아이템 2</span><span class="c-tag">&lt;/div&gt;</span>
+  <span class="c-tag">&lt;div&gt;</span><span class="c-text">아이템 3</span><span class="c-tag">&lt;/div&gt;</span>
+<span class="c-tag">&lt;/div&gt;</span></pre></div>
+      <div class="preview-wrap">
+        <div class="preview-label">Preview — 가로 한 줄 정렬</div>
+        <div class="preview-box">
+          <div class="pv-flex">
+            <div class="pv-flex-item">아이템 1</div>
+            <div class="pv-flex-item">아이템 2</div>
+            <div class="pv-flex-item">아이템 3</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-tip">
+        <strong>주요 속성</strong><br>
+        <code style="color:var(--accent3)">flex-direction</code>: row(가로) | column(세로)<br>
+        <code style="color:var(--accent3)">justify-content</code>: center | space-between | flex-start<br>
+        <code style="color:var(--accent3)">align-items</code>: center | stretch | flex-start<br>
+        <code style="color:var(--accent3)">flex-wrap</code>: wrap (줄바꿈 허용)
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       4. Grid
+  ══════════════════════════════ -->
+  <div class="tag-section" id="grid">
+    <div class="tag-section-title">④ Grid 레이아웃</div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">display: grid</span>
+        <span class="tag-badge badge-layout">레이아웃</span>
+      </div>
+      <p class="card-desc"><strong>2차원 레이아웃</strong>. 가로·세로를 동시에 제어합니다. 카드 그리드, 대시보드, 복잡한 페이지 구조에 최적.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;div</span> <span class="c-attr">style</span>=<span class="c-val">"display:grid; grid-template-columns:repeat(3,1fr); gap:12px;"</span><span class="c-tag">&gt;</span>
+  <span class="c-tag">&lt;div&gt;</span><span class="c-text">카드 1</span><span class="c-tag">&lt;/div&gt;</span>
+  <span class="c-tag">&lt;div&gt;</span><span class="c-text">카드 2</span><span class="c-tag">&lt;/div&gt;</span>
+  <span class="c-tag">&lt;div&gt;</span><span class="c-text">카드 3</span><span class="c-tag">&lt;/div&gt;</span>
+<span class="c-tag">&lt;/div&gt;</span></pre></div>
+      <div class="preview-wrap">
+        <div class="preview-label">Preview — 3열 그리드</div>
+        <div class="preview-box">
+          <div class="pv-grid">
+            <div class="pv-grid-item">카드 1</div>
+            <div class="pv-grid-item">카드 2</div>
+            <div class="pv-grid-item">카드 3</div>
+            <div class="pv-grid-item">카드 4</div>
+            <div class="pv-grid-item">카드 5</div>
+            <div class="pv-grid-item">카드 6</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-tip">
+        <strong>주요 속성</strong><br>
+        <code style="color:var(--accent3)">grid-template-columns</code>: repeat(3, 1fr) — 3등분<br>
+        <code style="color:var(--accent3)">grid-template-columns</code>: repeat(auto-fit, minmax(200px,1fr)) — 반응형<br>
+        <code style="color:var(--accent3)">grid-column</code>: 1 / 3 — 셀 병합(가로)<br>
+        <code style="color:var(--accent3)">grid-row</code>: 1 / 3 — 셀 병합(세로)
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       5. Table
+  ══════════════════════════════ -->
+  <div class="tag-section" id="table">
+    <div class="tag-section-title">⑤ Table 태그 — 표 형태 데이터</div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;table&gt;</span>
+        <span class="tag-badge badge-block">블록</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+      </div>
+      <p class="card-desc"><strong>표 형태의 데이터</strong>를 표시합니다. thead(머리행), tbody(본문), tr(행), th(제목셀), td(데이터셀)로 구성.</p>
+      <div class="card-tip"><strong>⚠️ 주의:</strong> 레이아웃용으로 table을 쓰는 건 구식입니다. 데이터 표시에만 사용하세요.</div>
+      <div class="code-block"><pre><span class="c-tag">&lt;table&gt;</span>
+  <span class="c-tag">&lt;thead&gt;</span>
+    <span class="c-tag">&lt;tr&gt;</span>
+      <span class="c-tag">&lt;th&gt;</span><span class="c-text">이름</span><span class="c-tag">&lt;/th&gt;</span>  <span class="c-tag">&lt;th&gt;</span><span class="c-text">과목</span><span class="c-tag">&lt;/th&gt;</span>
+    <span class="c-tag">&lt;/tr&gt;</span>
+  <span class="c-tag">&lt;/thead&gt;</span>
+  <span class="c-tag">&lt;tbody&gt;</span>
+    <span class="c-tag">&lt;tr&gt;</span>
+      <span class="c-tag">&lt;td&gt;</span><span class="c-text">이상경</span><span class="c-tag">&lt;/td&gt;</span>  <span class="c-tag">&lt;td&gt;</span><span class="c-text">웹 3D</span><span class="c-tag">&lt;/td&gt;</span>
+    <span class="c-tag">&lt;/tr&gt;</span>
+  <span class="c-tag">&lt;/tbody&gt;</span>
+<span class="c-tag">&lt;/table&gt;</span></pre></div>
+      <div class="preview-wrap">
+        <div class="preview-label">Preview</div>
+        <div class="preview-box">
+          <table class="pv-table">
+            <thead>
+              <tr><th>이름</th><th>과목</th><th>강의실</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>이상경</td><td>웹 3D</td><td>405호</td></tr>
+              <tr><td>이상경</td><td>AI 웹호스팅</td><td>407호</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       6. 인라인 태그
+  ══════════════════════════════ -->
+  <div class="tag-section" id="inline">
+    <div class="tag-section-title">⑥ 인라인 태그 — 줄 안에서 차지</div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;span&gt;</span>
+        <span class="tag-badge badge-inline">인라인</span>
+      </div>
+      <p class="card-desc">의미 없는 <strong>범용 인라인 컨테이너</strong>. 텍스트 일부에 색상·폰트 등 CSS를 적용할 때 씁니다.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;p&gt;</span><span class="c-text">안녕하세요, </span>
+  <span class="c-tag">&lt;span</span> <span class="c-attr">style</span>=<span class="c-val">"color:hotpink"</span><span class="c-tag">&gt;</span><span class="c-text">이상경</span><span class="c-tag">&lt;/span&gt;</span>
+<span class="c-text">입니다.</span><span class="c-tag">&lt;/p&gt;</span></pre></div>
+      <div class="preview-wrap">
+        <div class="preview-label">Preview — 인라인은 줄 안에 위치</div>
+        <div class="preview-box" style="font-size:14px">
+          안녕하세요, <span class="pv-inline">이상경</span> 입니다. — span은 줄을 바꾸지 않습니다.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;a&gt;</span>
+        <span class="tag-badge badge-inline">인라인</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+      </div>
+      <p class="card-desc"><strong>하이퍼링크</strong>. href로 이동 주소, target으로 탭 설정.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;a</span> <span class="c-attr">href</span>=<span class="c-val">"https://lskvr.github.io"</span>
+   <span class="c-attr">target</span>=<span class="c-val">"_blank"</span>
+   <span class="c-attr">rel</span>=<span class="c-val">"noopener noreferrer"</span><span class="c-tag">&gt;</span>
+  <span class="c-text">내 홈페이지</span>
+<span class="c-tag">&lt;/a&gt;</span></pre></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;img&gt;</span>
+        <span class="tag-badge badge-inline">인라인</span>
+      </div>
+      <p class="card-desc"><strong>이미지 삽입</strong>. alt는 접근성+SEO 필수. loading="lazy"로 성능 최적화.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;img</span>
+  <span class="c-attr">src</span>=<span class="c-val">"img/여주대.png"</span>
+  <span class="c-attr">alt</span>=<span class="c-val">"여주대학교 캠퍼스 전경"</span>
+  <span class="c-attr">width</span>=<span class="c-val">"900"</span>
+  <span class="c-attr">height</span>=<span class="c-val">"500"</span>
+  <span class="c-attr">loading</span>=<span class="c-val">"lazy"</span>
+<span class="c-tag">&gt;</span></pre></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       7. Form 태그
+  ══════════════════════════════ -->
+  <div class="tag-section" id="form">
+    <div class="tag-section-title">⑦ Form 태그 — 입력 레이아웃</div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;form&gt; &lt;input&gt; &lt;label&gt;</span>
+        <span class="tag-badge badge-block">블록/인라인</span>
+        <span class="tag-badge badge-semantic">시맨틱</span>
+      </div>
+      <p class="card-desc"><strong>입력 양식</strong>. form은 입력 묶음, label은 설명, input은 실제 입력창.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;form</span> <span class="c-attr">action</span>=<span class="c-val">"/submit"</span> <span class="c-attr">method</span>=<span class="c-val">"post"</span><span class="c-tag">&gt;</span>
+
+  <span class="c-tag">&lt;label</span> <span class="c-attr">for</span>=<span class="c-val">"name"</span><span class="c-tag">&gt;</span><span class="c-text">이름</span><span class="c-tag">&lt;/label&gt;</span>
+  <span class="c-tag">&lt;input</span> <span class="c-attr">type</span>=<span class="c-val">"text"</span> <span class="c-attr">id</span>=<span class="c-val">"name"</span> <span class="c-attr">name</span>=<span class="c-val">"name"</span><span class="c-tag">&gt;</span>
+
+  <span class="c-tag">&lt;label</span> <span class="c-attr">for</span>=<span class="c-val">"email"</span><span class="c-tag">&gt;</span><span class="c-text">이메일</span><span class="c-tag">&lt;/label&gt;</span>
+  <span class="c-tag">&lt;input</span> <span class="c-attr">type</span>=<span class="c-val">"email"</span> <span class="c-attr">id</span>=<span class="c-val">"email"</span><span class="c-tag">&gt;</span>
+
+  <span class="c-tag">&lt;button</span> <span class="c-attr">type</span>=<span class="c-val">"submit"</span><span class="c-tag">&gt;</span><span class="c-text">제출</span><span class="c-tag">&lt;/button&gt;</span>
+
+<span class="c-tag">&lt;/form&gt;</span></pre></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       8. 미디어 / 기타
+  ══════════════════════════════ -->
+  <div class="tag-section" id="media">
+    <div class="tag-section-title">⑧ 미디어 & 기타 태그</div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;video&gt; &lt;audio&gt;</span>
+        <span class="tag-badge badge-block">블록</span>
+      </div>
+      <p class="card-desc"><strong>영상/음성 삽입</strong>. controls 속성으로 재생 컨트롤 표시.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;video</span> <span class="c-attr">src</span>=<span class="c-val">"movie.mp4"</span> <span class="c-attr">controls</span> <span class="c-attr">width</span>=<span class="c-val">"640"</span><span class="c-tag">&gt;&lt;/video&gt;</span>
+
+<span class="c-tag">&lt;audio</span> <span class="c-attr">src</span>=<span class="c-val">"music.mp3"</span> <span class="c-attr">controls</span><span class="c-tag">&gt;&lt;/audio&gt;</span></pre></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;iframe&gt;</span>
+        <span class="tag-badge badge-block">블록</span>
+      </div>
+      <p class="card-desc"><strong>외부 페이지/지도/유튜브 삽입</strong>. 페이지 안에 다른 HTML 문서를 넣습니다.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;iframe</span>
+  <span class="c-attr">src</span>=<span class="c-val">"https://www.youtube.com/embed/영상ID"</span>
+  <span class="c-attr">width</span>=<span class="c-val">"560"</span>
+  <span class="c-attr">height</span>=<span class="c-val">"315"</span>
+  <span class="c-attr">allowfullscreen</span>
+<span class="c-tag">&gt;&lt;/iframe&gt;</span></pre></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;canvas&gt;</span>
+        <span class="tag-badge badge-block">블록</span>
+      </div>
+      <p class="card-desc"><strong>그래픽 드로잉 영역</strong>. JavaScript로 2D/3D 그래픽을 그립니다. Three.js도 canvas를 사용합니다.</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;canvas</span> <span class="c-attr">id</span>=<span class="c-val">"three-canvas"</span>
+        <span class="c-attr">width</span>=<span class="c-val">"800"</span>
+        <span class="c-attr">height</span>=<span class="c-val">"600"</span><span class="c-tag">&gt;</span>
+<span class="c-tag">&lt;/canvas&gt;</span></pre></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="tag-name">&lt;br&gt; &lt;hr&gt;</span>
+        <span class="tag-badge badge-inline">인라인/블록</span>
+      </div>
+      <p class="card-desc"><strong>줄바꿈/수평선</strong>. br = 텍스트 강제 줄바꿈, hr = 주제 구분선(수평선).</p>
+      <div class="code-block"><pre><span class="c-tag">&lt;p&gt;</span><span class="c-text">첫 줄</span><span class="c-tag">&lt;br&gt;</span><span class="c-text">두 번째 줄</span><span class="c-tag">&lt;/p&gt;</span>
+
+<span class="c-tag">&lt;hr&gt;</span>  <span class="c-cmnt">&lt;!-- 구분선 --&gt;</span></pre></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       빠른 비교표
+  ══════════════════════════════ -->
+  <div class="tag-section" style="padding-bottom: 60px;">
+    <div class="tag-section-title">⑨ 한눈에 보는 비교표</div>
+    <div class="card">
+      <div class="code-block" style="padding: 20px 24px;">
+        <table class="pv-table" style="width:100%">
+          <thead>
+            <tr>
+              <th>태그</th>
+              <th>타입</th>
+              <th>주요 용도</th>
+              <th>SEO/접근성</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>&lt;header&gt;</td><td>블록·시맨틱</td><td>페이지 상단 머리말</td><td>⭐⭐⭐</td></tr>
+            <tr><td>&lt;nav&gt;</td><td>블록·시맨틱</td><td>내비게이션 메뉴</td><td>⭐⭐⭐</td></tr>
+            <tr><td>&lt;main&gt;</td><td>블록·시맨틱</td><td>핵심 본문 (1개만)</td><td>⭐⭐⭐</td></tr>
+            <tr><td>&lt;section&gt;</td><td>블록·시맨틱</td><td>주제별 구역</td><td>⭐⭐⭐</td></tr>
+            <tr><td>&lt;article&gt;</td><td>블록·시맨틱</td><td>독립 콘텐츠 단위</td><td>⭐⭐⭐</td></tr>
+            <tr><td>&lt;aside&gt;</td><td>블록·시맨틱</td><td>사이드바/부가정보</td><td>⭐⭐</td></tr>
+            <tr><td>&lt;footer&gt;</td><td>블록·시맨틱</td><td>페이지 하단 꼬리말</td><td>⭐⭐</td></tr>
+            <tr><td>&lt;div&gt;</td><td>블록</td><td>범용 컨테이너</td><td>—</td></tr>
+            <tr><td>&lt;span&gt;</td><td>인라인</td><td>텍스트 부분 스타일</td><td>—</td></tr>
+            <tr><td>&lt;h1&gt;~&lt;h6&gt;</td><td>블록·시맨틱</td><td>제목 계층</td><td>⭐⭐⭐</td></tr>
+            <tr><td>&lt;p&gt;</td><td>블록·시맨틱</td><td>문단 텍스트</td><td>⭐⭐</td></tr>
+            <tr><td>display:flex</td><td>CSS 레이아웃</td><td>1차원 정렬</td><td>—</td></tr>
+            <tr><td>display:grid</td><td>CSS 레이아웃</td><td>2차원 격자</td><td>—</td></tr>
+            <tr><td>&lt;table&gt;</td><td>블록·시맨틱</td><td>표 형태 데이터</td><td>⭐⭐</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="page-footer">
+  HTML Layout Tags Reference &nbsp;·&nbsp; 이상경의 웹프로그래밍
+</footer>
+
+</body>
+</html>
