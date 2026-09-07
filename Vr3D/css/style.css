@@ -40,7 +40,7 @@ html, body {
   bottom: 28px;
   right: 24px;
   z-index: 20;
-  display: none; /* 모바일에서만 JS 로 표시 */
+  display: block; /* 기기 감지에 의존하지 않고 항상 표시 (PC에서도 테스트 가능) */
   padding: 14px 20px;
   background: rgba(0, 0, 0, 0.65);
   color: #fff;
@@ -48,6 +48,8 @@ html, body {
   border-radius: 10px;
   font-size: 16px;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* 더블탭 확대/딜레이 방지 */
 }
 
 #exit-vr {

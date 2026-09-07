@@ -22,19 +22,25 @@ core.onUpdate((delta, elapsed) => {
 core.start(() => vr.render());
 
 // ---- Platform UI: PC / Mobile VR 전환 ----
+// 기기 판별(UA)에 의존하지 않고 버튼은 항상 노출한다.
+// PC에서 눌러도 좌우 분할 화면만 보일 뿐 동작에는 문제가 없고,
+// 스마트폰에서는 자이로 권한 요청까지 함께 이뤄진다.
 const vrButton = document.getElementById('vr-button');
 const exitVrButton = document.getElementById('exit-vr');
 
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-if (isMobile) vrButton.style.display = 'block';
+async function enterOrExitVR() {
+  try {
+    await vr.toggle();
+    pcControls.enabled = !vr.enabled;
+  } catch (err) {
+    console.error(err);
+  }
+}
 
-vrButton.addEventListener('click', async () => {
-  await vr.toggle();
-  pcControls.enabled = !vr.enabled;
-});
-
-exitVrButton.addEventListener('click', async (e) => {
+// click 은 모바일 탭에서도 정상 발생하며, 사용자 제스처 컨텍스트 안에서
+// 바로 실행되어야 iOS 자이로 권한 요청(requestPermission)이 허용된다.
+vrButton.addEventListener('click', enterOrExitVR);
+exitVrButton.addEventListener('click', (e) => {
   e.stopPropagation();
-  await vr.toggle();
-  pcControls.enabled = !vr.enabled;
+  enterOrExitVR();
 });
