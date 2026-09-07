@@ -17,6 +17,12 @@ export class VRModule {
     this._quaternion = new THREE.Quaternion();
     this._onDeviceOrientation = this._onDeviceOrientation.bind(this);
     this._hasOrientation = false;
+
+    // 재사용 객체 (매 프레임 new 하지 않기 위함)
+    this._zee = new THREE.Vector3(0, 0, 1);
+    this._euler = new THREE.Euler();
+    this._q0 = new THREE.Quaternion();
+    this._q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5)); // -90도 X축 회전
   }
 
   async toggle() {
@@ -54,20 +60,32 @@ export class VRModule {
     this._hasOrientation = true;
   }
 
+  /** 현재 화면 회전각(도) - 가로/세로 전환을 보정하기 위해 사용 */
+  _getScreenOrientationAngle() {
+    if (screen.orientation && typeof screen.orientation.angle === 'number') {
+      return screen.orientation.angle;
+    }
+    if (typeof window.orientation === 'number') {
+      return window.orientation;
+    }
+    return 0;
+  }
+
   _onDeviceOrientation(event) {
     const { alpha, beta, gamma } = event;
     if (alpha === null || beta === null || gamma === null) return;
 
-    const euler = new THREE.Euler(
+    const orient = THREE.MathUtils.degToRad(this._getScreenOrientationAngle());
+
+    this._euler.set(
       THREE.MathUtils.degToRad(beta),
       THREE.MathUtils.degToRad(alpha),
       -THREE.MathUtils.degToRad(gamma),
       'YXZ'
     );
-    const screenAdjust = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
-
-    this._quaternion.setFromEuler(euler);
-    this._quaternion.multiply(screenAdjust);
+    this._quaternion.setFromEuler(this._euler);                // 기기 방향
+    this._quaternion.multiply(this._q1);                        // 카메라가 기기 뒷면을 보도록 보정
+    this._quaternion.multiply(this._q0.setFromAxisAngle(this._zee, -orient)); // 화면 회전(가로/세로) 보정
 
     this.core.camera.quaternion.copy(this._quaternion);
   }
