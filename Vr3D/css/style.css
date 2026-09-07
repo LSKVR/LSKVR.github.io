@@ -1,0 +1,92 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: -apple-system, "Malgun Gothic", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+#app canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#info {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+#vr-button {
+  position: fixed;
+  bottom: 28px;
+  right: 24px;
+  z-index: 20;
+  display: none; /* 모바일에서만 JS 로 표시 */
+  padding: 14px 20px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  border: 2px solid #ffffff;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#exit-vr {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 30;
+  display: none;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  border: 2px solid #ffffff;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+body.vr-mode #info {
+  display: none;
+}
+
+body.vr-mode #vr-button {
+  display: none;
+}
+
+body.vr-mode #exit-vr {
+  display: block;
+}
+
+#error-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(20, 0, 0, 0.92);
+  color: #ff8080;
+  font-family: monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  padding: 20px;
+  overflow: auto;
+}

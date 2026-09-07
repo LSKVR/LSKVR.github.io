@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>VR 숲 - 카드보드 테스트</title>
+<link rel="stylesheet" href="css/style.css" />
+
+<!-- 구형 브라우저에서도 importmap 이 동작하도록 폴리필 추가 -->
+<script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
+
+<!-- Three.js 최신 안정 버전을 ES Module 로 로드 -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="info">
+    PC: 드래그로 시점 회전, WASD로 이동<br/>
+    모바일: 화면 하단 버튼으로 VR(카드보드) 모드 진입
+  </div>
+
+  <button id="vr-button">🥽 VR 모드로 보기</button>
+  <button id="exit-vr">✕ VR 종료</button>
+
+  <!-- 문제 진단용: 에러가 나면 콘솔 없이도 화면에 바로 표시 -->
+  <div id="error-overlay"></div>
+  <script>
+    function showError(msg) {
+      var el = document.getElementById('error-overlay');
+      el.style.display = 'block';
+      el.textContent += msg + '\n\n';
+    }
+    window.addEventListener('error', function (e) {
+      var target = e.target;
+      if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
+        showError('[리소스 로드 실패] ' + (target.src || target.href) +
+          '\n(파일이 없거나, 서버가 .js 를 잘못된 MIME 타입으로 응답했을 수 있습니다)');
+      } else {
+        showError('[오류] ' + (e.message || e.error) + (e.filename ? '\n위치: ' + e.filename + ':' + e.lineno : ''));
+      }
+    }, true); // capture 단계: 리소스 로드 실패도 감지
+    window.addEventListener('unhandledrejection', function (e) {
+      showError('[Promise 오류] ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+    });
+    if (!window.WebGLRenderingContext) {
+      showError('이 브라우저는 WebGL 을 지원하지 않습니다.');
+    } else {
+      var testCanvas = document.createElement('canvas');
+      var gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+      if (!gl) showError('WebGL 컨텍스트를 생성할 수 없습니다. (그래픽 가속이 꺼져 있거나 브라우저 제한)');
+    }
+  </script>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
