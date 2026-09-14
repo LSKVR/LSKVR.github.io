@@ -3,21 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wafer Fab 8-Step 360 VR - Three.js WebXR</title>
+  <title>Wafer Fab 8-Step 360 VR - Three.js</title>
   <style>
-    body { margin: 0; overflow: hidden; background-color: #eef2f7; font-family: 'Pretendard', sans-serif; }
+    body { margin: 0; overflow: hidden; background-color: #eef2f7; font-family: sans-serif; }
     #info { 
       position: absolute; top: 12px; width: 100%; text-align: center; 
-      color: #1e293b; z-index: 10; pointer-events: none; text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+      color: #1e293b; z-index: 10; pointer-events: none;
     }
-    #info h2 { margin: 0 0 4px 0; font-size: 20px; }
-    #info p { margin: 0; font-size: 13px; color: #475569; }
+    #info h2 { margin: 0 0 4px 0; font-size: 18px; }
+    #info p { margin: 0; font-size: 12px; color: #475569; }
   </style>
+
+  <!-- 안정적인 Three.js Import Map 설정 -->
   <script type="importmap">
     {
       "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
       }
     }
   </script>
@@ -25,7 +27,7 @@
 <body>
   <div id="info">
     <h2>웨이퍼 제조 8단계 세부 공정 360 VR</h2>
-    <p>밝은 클린룸 환경 | 버튼을 1.5초간 바라보면 해당 공정으로 전환됩니다.</p>
+    <p>아바타 중심 8개 장비 원형 배치 | 버튼을 1.5초간 바라보면 시선 이동합니다.</p>
   </div>
 
   <script type="module">
@@ -39,53 +41,51 @@
     let gazeTimer = 0;
     const GAZE_THRESHOLD = 90; // 약 1.5초 (60fps 기준)
 
-    const RADIUS = 6; // 아바타 중심으로부터 반경 (6미터)
+    const RADIUS = 5.5; // 아바타 중심 둘레 반경
     const STAGES_COUNT = 8;
     const stageNodes = [];
 
     init();
 
     function init() {
-      // 1. Scene & Camera (밝은 환경 설정)
+      // 1. Scene & Camera (밝은 클린룸)
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xeef2f7); // 밝은 클린룸 그레이
-      scene.fog = new THREE.FogExp2(0xeef2f7, 0.03);
+      scene.background = new THREE.Color(0xeef2f7);
+      scene.fog = new THREE.FogExp2(0xeef2f7, 0.04);
 
       cameraGroup = new THREE.Group();
-      cameraGroup.position.set(0, 1.6, 0); // 아바타 눈높이 (1.6m)
+      cameraGroup.position.set(0, 1.6, 0); // 인간 눈높이 1.6m
       scene.add(cameraGroup);
 
       camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
       cameraGroup.add(camera);
 
-      // 2. Renderer & WebXR
+      // 2. Renderer & WebXR Setup
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.1;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.xr.enabled = true;
       document.body.appendChild(renderer.domElement);
       document.body.appendChild(VRButton.createButton(renderer));
 
-      // 3. Bright Lighting Setup (밝은 공장/클린룸 조명)
+      // 3. Bright Lighting Setup
       const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
       scene.add(ambientLight);
 
-      const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
-      mainLight.position.set(10, 20, 10);
-      scene.add(mainLight);
+      const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.5);
+      dirLight1.position.set(10, 20, 10);
+      scene.add(dirLight1);
 
-      const fillLight = new THREE.DirectionalLight(0xdbeafe, 0.8);
-      fillLight.position.set(-10, 15, -10);
-      scene.add(fillLight);
+      const dirLight2 = new THREE.DirectionalLight(0xdbeafe, 0.8);
+      dirLight2.position.set(-10, 15, -10);
+      scene.add(dirLight2);
 
       // 클린룸 바닥 패널 격자
       const grid = new THREE.GridHelper(30, 30, 0x0284c7, 0xcbxde1);
       grid.position.y = 0;
       scene.add(grid);
 
-      // 4. Central Gaze Reticle
+      // 4. Center Gaze Pointer (Reticle)
       const reticleGeo = new THREE.RingGeometry(0.008, 0.018, 32);
       const reticleMat = new THREE.MeshBasicMaterial({ color: 0x0284c7, side: THREE.DoubleSide, depthTest: false });
       reticle = new THREE.Mesh(reticleGeo, reticleMat);
@@ -97,43 +97,43 @@
 
       // 5. 8단계 세부 공정 정의
       const stageTitles = [
-        "1. 실리콘 용융 (Melting)",
-        "2. 잉곳 인상 (Ingot Pulling)",
-        "3. 외경 절삭 (Ingot Grinding)",
-        "4. 와이어 절단 (Wire Slicing)",
-        "5. 면취 가공 (Edge Profiling)",
-        "6. 랩핑 공정 (Dual Lapping)",
-        "7. CMP 연마 (CMP Polishing)",
-        "8. 세정/검사 (Laser Inspection)"
+        "1. 실리콘 용융",
+        "2. 잉곳 인상",
+        "3. 외경 절삭",
+        "4. 와이어 절단",
+        "5. 면취 가공",
+        "6. 랩핑 공정",
+        "7. CMP 연마",
+        "8. 세정/검사"
       ];
 
-      // 8개 장비 원형 배치 (45도 간격)
+      // 8개 장비를 360도 원형으로 완전 에워싸도록 수식 구성
       for (let i = 0; i < STAGES_COUNT; i++) {
-        const angle = (i / STAGES_COUNT) * Math.PI * 2;
+        const angle = (i / STAGES_COUNT) * Math.PI * 2; // 45도 간격
         const x = Math.sin(angle) * RADIUS;
         const z = -Math.cos(angle) * RADIUS;
 
         const stageGroup = new THREE.Group();
         stageGroup.position.set(x, 0, z);
-        stageGroup.lookAt(0, 0, 0);
+        stageGroup.lookAt(0, 0, 0); // 중심 아바타를 향하도록 회전
 
-        // 화이트/메탈 톤의 받침대 (Podium)
-        const baseGeo = new THREE.CylinderGeometry(0.7, 0.85, 0.35, 32);
-        const baseMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.2, roughness: 0.3 });
+        // 화이트 톤의 거치대 (Podium)
+        const baseGeo = new THREE.CylinderGeometry(0.65, 0.8, 0.3, 32);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.2 });
         const baseMesh = new THREE.Mesh(baseGeo, baseMat);
-        baseMesh.position.y = 0.175;
+        baseMesh.position.y = 0.15;
         stageGroup.add(baseMesh);
 
-        // 8단계 3D 메쉬 생성
-        const equipment = create8StageEquipment(i);
-        equipment.position.y = 0.8;
+        // 3D 장비 모델 생성
+        const equipment = createStageEquipment(i);
+        equipment.position.y = 0.75;
         stageGroup.add(equipment);
 
-        // 3D Spatial Floating UI
-        const btnGeo = new THREE.BoxGeometry(1.4, 0.32, 0.08);
+        // 3D Spatial UI 버튼 (장비 상단)
+        const btnGeo = new THREE.BoxGeometry(1.3, 0.3, 0.08);
         const btnMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, emissive: 0x0369a1 });
         const btnMesh = new THREE.Mesh(btnGeo, btnMat);
-        btnMesh.position.set(0, 1.85, 0);
+        btnMesh.position.set(0, 1.75, 0);
         btnMesh.userData = { stageIndex: i, title: stageTitles[i], angle: angle };
         stageGroup.add(btnMesh);
 
@@ -147,59 +147,57 @@
       renderer.setAnimationLoop(render);
     }
 
-    // 8개 세부 장비 3D 셰이프 생성
-    function create8StageEquipment(index) {
+    // 8단계 개별 장비 3D 모델링
+    function createStageEquipment(index) {
       const group = new THREE.Group();
       const metalMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
 
       switch(index) {
-        case 0: // 1. 용융 (Melting Vat)
-          const vat = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.5, 32), new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c }));
+        case 0: // 1. 용융
+          const vat = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.45, 32), new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c }));
           group.add(vat);
           break;
-        case 1: // 2. 잉곳 성장의 시드 수직 성장
-          const crucible = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.4, 32), metalMat);
-          const ingotPull = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.9, 32), metalMat);
-          ingotPull.position.y = 0.5;
+        case 1: // 2. 잉곳 성장
+          const crucible = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.3, 32), metalMat);
+          const ingotPull = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.8, 32), metalMat);
+          ingotPull.position.y = 0.4;
           group.add(crucible, ingotPull);
           break;
-        case 2: // 3. 잉곳 외경 그라인딩
-          const ingotHorizontal = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.9, 32), metalMat);
-          ingotHorizontal.rotation.z = Math.PI / 2;
-          group.add(ingotHorizontal);
+        case 2: // 3. 외경 절삭
+          const ingotH = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.8, 32), metalMat);
+          ingotH.rotation.z = Math.PI / 2;
+          group.add(ingotH);
           break;
-        case 3: // 4. 와이어 톱 절단 (Wire Saw)
-          const frame = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 0.4), new THREE.MeshStandardMaterial({ color: 0x64748b }));
+        case 3: // 4. 와이어 절단
+          const frame = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.35), new THREE.MeshStandardMaterial({ color: 0x64748b }));
           group.add(frame);
           break;
-        case 4: // 5. 테두리 면취 (Edge Chamfering)
-          const waferEdge = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.04, 32), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+        case 4: // 5. 면취 가공
+          const waferEdge = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.03, 32), new THREE.MeshStandardMaterial({ color: 0x334155 }));
           group.add(waferEdge);
           break;
-        case 5: // 6. 랩핑 (Dual Lapping Plate)
-          const plate1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.08, 32), metalMat);
-          const plate2 = plate1.clone();
-          plate1.position.y = 0.15;
-          plate2.position.y = -0.15;
-          group.add(plate1, plate2);
+        case 5: // 6. 랩핑
+          const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.06, 32), metalMat);
+          const p2 = p1.clone();
+          p1.position.y = 0.12;
+          p2.position.y = -0.12;
+          group.add(p1, p2);
           break;
-        case 6: // 7. CMP 화학기계적 연마 (Mirror Finish)
-          const mirrorWafer = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.02, 32), new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.98, roughness: 0.02 }));
-          const carrier = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.2, 16), metalMat);
-          carrier.position.set(0.1, 0.2, 0.1);
-          group.add(mirrorWafer, carrier);
+        case 6: // 7. CMP 정밀 연마
+          const mirror = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.02, 32), new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.98, roughness: 0.02 }));
+          group.add(mirror);
           break;
-        case 7: // 8. 세정 및 레이저 결함 스캔
-          const cleanWafer = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.02, 32), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.1 }));
-          const laserBeam = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.02, 0.02), new THREE.MeshBasicMaterial({ color: 0x06b6d4 }));
-          laserBeam.position.y = 0.12;
+        case 7: // 8. 세정 및 레이저 검사
+          const cleanWafer = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.02, 32), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.1 }));
+          const laserBeam = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.015, 0.015), new THREE.MeshBasicMaterial({ color: 0x06b6d4 }));
+          laserBeam.position.y = 0.1;
           group.add(cleanWafer, laserBeam);
           break;
       }
       return group;
     }
 
-    // Gaze Pointer Raycasting
+    // Gaze Raycasting & 타이머
     function updateGaze() {
       raycaster.setFromCamera({ x: 0, y: 0 }, camera);
       const intersects = raycaster.intersectObjects(interactiveObjects);
@@ -214,7 +212,7 @@
         gazeTimer++;
         const progress = Math.min(gazeTimer / GAZE_THRESHOLD, 1);
         reticle.scale.set(1 + progress * 0.8, 1 + progress * 0.8, 1);
-        reticle.material.color.setHSL(0.55 - progress * 0.35, 1, 0.4); // 파랑 -> 초록 변환
+        reticle.material.color.setHSL(0.55 - progress * 0.35, 1, 0.4);
 
         if (gazeTimer >= GAZE_THRESHOLD) {
           onSelectStage(target.userData);
@@ -228,7 +226,7 @@
       }
     }
 
-    // 선택된 8단계 방향으로 카메라인 아바타 링 회전
+    // 선택 시 해당 공정 방향으로 카메라 링 회전
     function onSelectStage(data) {
       cameraGroup.rotation.y = -data.angle;
     }
@@ -239,7 +237,7 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    function render(time) {
+    function render() {
       updateGaze();
 
       // 8개 장비 회전 애니메이션
