@@ -33,11 +33,30 @@ export class VRModule {
       await this._requestOrientationPermission();
       this._requestFullscreen();
       this._lockLandscape();
+
+      // OS 자동회전이 꺼져 있어 뷰포트가 계속 세로로 남아있는 경우를 대비해
+      // 강제로 가로처럼 보이도록 CSS 회전을 적용하고, 실제 회전 여부를 계속 감시한다.
+      this._updateForcedLandscape();
+      window.addEventListener('resize', this._updateForcedLandscape);
+      window.addEventListener('orientationchange', this._updateForcedLandscape);
     } else {
       this._exitFullscreen();
+      this.core.setForcedLandscape(false);
+      window.removeEventListener('resize', this._updateForcedLandscape);
+      window.removeEventListener('orientationchange', this._updateForcedLandscape);
     }
 
     this.core._onResize();
+  }
+
+  /**
+   * 뷰포트가 세로(innerWidth < innerHeight)인데 VR 모드가 켜져 있다면
+   * = 기기를 가로로 들었어도 브라우저가 실제로는 회전하지 못한 상태이므로
+   * CSS 로 강제 회전시킨다. 실제로 가로로 인식되면 자동 해제된다.
+   */
+  _updateForcedLandscape() {
+    const isPortraitViewport = window.innerWidth < window.innerHeight;
+    this.core.setForcedLandscape(this.enabled && isPortraitViewport);
   }
 
   async _requestOrientationPermission() {
@@ -110,18 +129,19 @@ export class VRModule {
   /** Core.start(renderFn) 에 전달되는 렌더 함수 */
   render() {
     const { renderer, scene, camera } = this.core;
+    const { width: fullWidth, height: fullHeight } = this.core.getEffectiveSize();
 
     if (!this.enabled) {
       renderer.setScissorTest(false);
-      renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth / window.innerHeight;
+      renderer.setViewport(0, 0, fullWidth, fullHeight);
+      camera.aspect = fullWidth / fullHeight;
       camera.updateProjectionMatrix();
       renderer.render(scene, camera);
       return;
     }
 
-    const width = window.innerWidth / 2;
-    const height = window.innerHeight;
+    const width = fullWidth / 2;
+    const height = fullHeight;
 
     camera.aspect = width / height;
     camera.updateProjectionMatrix();

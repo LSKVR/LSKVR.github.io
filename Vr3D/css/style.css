@@ -92,3 +92,24 @@ body.vr-mode #exit-vr {
   padding: 20px;
   overflow: auto;
 }
+
+/*
+  강제 가로모드(force-landscape)
+  일부 기기는 화면 자동회전이 꺼져있으면 폰을 가로로 들어도
+  브라우저 뷰포트가 세로로 고정된 채로 남는다.
+  이 경우 CSS 로 90도 회전시켜 시각적으로 가로처럼 보이게 한다.
+*/
+body.force-landscape #app {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  width: 100vh;
+  height: 100vw;
+  transform-origin: 0 0;
+  transform: rotate(90deg);
+}
+
+body.force-landscape #exit-vr {
+  transform-origin: center;
+  transform: rotate(90deg);
+}

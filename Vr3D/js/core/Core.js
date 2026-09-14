@@ -8,6 +8,7 @@ import * as THREE from 'three';
 export class Core {
   constructor(container) {
     this.container = container;
+    this.isForcedLandscape = false;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x8ecae6);
@@ -49,10 +50,32 @@ export class Core {
     this._updateCallbacks.push(fn);
   }
 
+  /**
+   * 실제 렌더링에 사용할 크기를 계산한다.
+   * isForcedLandscape 가 true 면(= 기기가 물리적으로는 가로지만
+   * OS 자동회전이 꺼져있어 브라우저 뷰포트가 여전히 세로인 경우)
+   * width/height 를 서로 바꿔서 계산한다.
+   */
+  getEffectiveSize() {
+    if (this.isForcedLandscape) {
+      return { width: window.innerHeight, height: window.innerWidth };
+    }
+    return { width: window.innerWidth, height: window.innerHeight };
+  }
+
+  /** 강제 가로모드 on/off. CSS 회전 클래스를 body에 토글한다. */
+  setForcedLandscape(active) {
+    if (this.isForcedLandscape === active) return;
+    this.isForcedLandscape = active;
+    document.body.classList.toggle('force-landscape', active);
+    this._onResize();
+  }
+
   _onResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    const { width, height } = this.getEffectiveSize();
+    this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(width, height);
   }
 
   /** renderFn 이 주어지면 렌더링을 위임(예: VR 스테레오 렌더) */
