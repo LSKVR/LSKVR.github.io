@@ -1,778 +1,227 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Wafer Fabrication VR - WebXR</title>
-<style>
-  html, body {
-    margin: 0; padding: 0; width: 100%; height: 100%;
-    overflow: hidden; background: #04050a;
-    font-family: -apple-system, sans-serif;
-  }
-  #app { position: fixed; inset: 0; }
-  #app canvas { display: block; width: 100%; height: 100%; }
-
-  #hud {
-    position: fixed; top: 14px; left: 14px; z-index: 10;
-    color: #fff; background: rgba(0,0,0,0.45);
-    padding: 10px 14px; border-radius: 8px;
-    font-size: 12px; line-height: 1.6; max-width: 320px;
-    pointer-events: none;
-  }
-
-  #error-overlay {
-    display: none; position: fixed; inset: 0; z-index: 100;
-    background: rgba(20,0,0,0.92); color: #ff8080;
-    font-family: monospace; font-size: 13px; white-space: pre-wrap;
-    padding: 20px; overflow: auto;
-  }
-
-  /* three.js VRButton 기본 스타일 보정 */
-  button {
-    font-family: inherit;
-  }
-</style>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wafer Fab 360 VR - Three.js WebXR</title>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #0d1117; font-family: sans-serif; }
+    #info { position: absolute; top: 10px; width: 100%; text-align: center; color: white; z-index: 10; pointer-events: none; }
+  </style>
+  <!-- Three.js 및 VRButton CDN Import -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
 </head>
 <body>
-  <div id="app"></div>
-
-  <div id="hud">
-    <b>Wafer Fabrication — WebXR Demo</b><br/>
-    Desktop preview: drag to look around.<br/>
-    Enter VR with the button below, then <b>gaze</b> at a floating
-    button and hold for 1.5s to select (hands-free).
+  <div id="info">
+    <h2>반도체 웨이퍼 제조 공정 360 VR</h2>
+    <p>아바타 중심 360도 배치 | 버튼을 1.5초간 바라보면 해당 장비로 회전합니다.</p>
   </div>
 
-  <div id="error-overlay"></div>
-  <script>
-    function showError(msg) {
-      var el = document.getElementById('error-overlay');
-      el.style.display = 'block';
-      el.textContent += msg + '\n\n';
-    }
-    window.addEventListener('error', function (e) {
-      var t = e.target;
-      if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK')) {
-        showError('[Resource load failed] ' + (t.src || t.href));
-      } else {
-        showError('[Error] ' + (e.message || e.error) + (e.filename ? '\nat ' + e.filename + ':' + e.lineno : ''));
-      }
-    }, true);
-    window.addEventListener('unhandledrejection', function (e) {
-      showError('[Promise error] ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
-    });
-  </script>
-
   <script type="module">
-  import * as THREE from 'three';
-  import { VRButton } from 'three/addons/webxr/VRButton.js';
+    import * as THREE from 'three';
+    import { VRButton } from 'three/addons/webxr/VRButton.js';
 
-  /* =========================================================
-     CONTENT DATA — 5 stage definitions (data separated from code)
-     ========================================================= */
-  const STAGES = [
-    {
-      id: 'ingot-growth',
-      title: 'Stage 1 · Ingot Growth',
-      subtitle: 'Czochralski Process',
-      desc: 'A seed crystal is dipped into molten silicon and slowly pulled upward while rotating, growing a solid single-crystal ingot.',
-      color: 0xff8a3d,
-    },
-    {
-      id: 'wire-slicing',
-      title: 'Stage 2 · Wire Slicing',
-      subtitle: 'Ingot Cutting',
-      desc: 'A high-speed wire grid saws through the ingot, slicing it into hundreds of thin, bare silicon wafer discs.',
-      color: 0xd8c24a,
-    },
-    {
-      id: 'lapping',
-      title: 'Stage 3 · Edge Profiling & Lapping',
-      subtitle: 'Mechanical Flattening',
-      desc: 'The wafer spins between two counter-rotating platens with abrasive slurry, flattening it and rounding its edges.',
-      color: 0x4aa8e8,
-    },
-    {
-      id: 'cmp',
-      title: 'Stage 4 · CMP Polishing',
-      subtitle: 'Chemical Mechanical Polishing',
-      desc: 'An orbiting carrier head presses the wafer onto a polishing pad, transforming the surface into a mirror finish.',
-      color: 0x8f9aa6,
-    },
-    {
-      id: 'inspection',
-      title: 'Stage 5 · Laser Defect Inspection',
-      subtitle: 'Surface Metrology',
-      desc: 'A sweeping laser scanner illuminates the mirror-finished wafer, detecting microscopic surface defects.',
-      color: 0x4dffb8,
-    },
-  ];
+    let scene, camera, renderer, cameraGroup;
+    let reticle, raycaster;
+    let interactiveObjects = [];
+    let currentGazeTarget = null;
+    let gazeTimer = 0;
+    const GAZE_THRESHOLD = 90; // 60fps 기준 약 1.5초
 
-  const SPACING = 16;
-  STAGES.forEach((s, i) => {
-    s.index = i;
-    s.x = (i - (STAGES.length - 1) / 2) * SPACING;
-  });
+    const RADIUS = 5; // 아바타 중심으로부터 장비까지의 거리 (미터)
+    const STAGES_COUNT = 5;
+    const stageNodes = [];
 
-  /* =========================================================
-     CORE — Scene / Camera / Renderer / WebXR setup
-     ========================================================= */
-  const container = document.getElementById('app');
+    init();
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x05060a);
-  scene.fog = new THREE.Fog(0x05060a, 20, 90);
+    function init() {
+      // 1. Scene & Camera Setup
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0d1117);
+      scene.fog = new THREE.FogExp2(0x0d1117, 0.05);
 
-  const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 500);
+      // 아바타/카메라 그룹 (중심에 위치)
+      cameraGroup = new THREE.Group();
+      cameraGroup.position.set(0, 1.6, 0); // 인간 눈높이 1.6m
+      scene.add(cameraGroup);
 
-  // cameraDolly: moving this group is how we relocate the VR viewer,
-  // since the camera's own pose is driven by the WebXR device.
-  const cameraDolly = new THREE.Group();
-  cameraDolly.add(camera);
-  camera.position.set(0, 1.6, 0);
-  scene.add(cameraDolly);
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+      cameraGroup.add(camera);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.xr.enabled = true; // 1. Standard WebXR enablement
-  container.appendChild(renderer.domElement);
+      // 2. Renderer & WebXR Setup
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.xr.enabled = true;
+      document.body.appendChild(renderer.domElement);
+      document.body.appendChild(VRButton.createButton(renderer));
 
-  // Standard three.js VRButton — enters immersive VR session
-  document.body.appendChild(VRButton.createButton(renderer));
+      // 3. Ambient & Direct Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
 
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+      dirLight.position.set(5, 10, 5);
+      scene.add(dirLight);
 
-  // Lighting
-  scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x14161a, 0.9));
-  const key = new THREE.DirectionalLight(0xffffff, 1.0);
-  key.position.set(15, 25, 10);
-  scene.add(key);
+      // 바닥 격자 링
+      const grid = new THREE.GridHelper(20, 20, 0x00ffff, 0x333333);
+      grid.position.y = 0;
+      scene.add(grid);
 
-  // Floor
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(140, 24),
-    new THREE.MeshStandardMaterial({ color: 0x121418, roughness: 0.95 })
-  );
-  floor.rotation.x = -Math.PI / 2;
-  scene.add(floor);
-  scene.add(new THREE.GridHelper(140, 70, 0x24303a, 0x1a1f24));
+      // 4. Central Gaze Reticle (시선 포인터)
+      const reticleGeo = new THREE.RingGeometry(0.01, 0.02, 32);
+      const reticleMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, side: THREE.DoubleSide, depthTest: false });
+      reticle = new THREE.Mesh(reticleGeo, reticleMat);
+      reticle.position.z = -1; // 카메라 앞 1m
+      reticle.renderOrder = 999;
+      camera.add(reticle);
 
-  /* =========================================================
-     LABEL / TEXT PANEL UTILITY
-     ========================================================= */
-  function makeTextPanel(lines, { width = 1024, height = 384, bg = 'rgba(8,10,14,0.85)', accent = '#4dd0ff' } = {}) {
-    const canvas = document.createElement('canvas');
-    canvas.width = width; canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = bg;
-    roundRect(ctx, 6, 6, width - 12, height - 12, 28);
-    ctx.fill();
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 4;
-    roundRect(ctx, 6, 6, width - 12, height - 12, 28);
-    ctx.stroke();
+      raycaster = new THREE.Raycaster();
 
-    let y = 56;
-    lines.forEach((line, i) => {
-      ctx.fillStyle = line.color || '#ffffff';
-      ctx.font = line.font || '32px sans-serif';
-      ctx.textBaseline = 'top';
-      wrapText(ctx, line.text, 40, y, width - 80, line.lineHeight || 40);
-      y += (line.blockHeight !== undefined ? line.blockHeight : 50);
-    });
+      // 5. Create 5 Stages arranged in a Circle around Avatar
+      const stageTitles = [
+        "1. 잉곳 성장 (Ingot Growth)",
+        "2. 와이어 절단 (Wire Slicing)",
+        "3. 랩핑/면취 (Edge & Lapping)",
+        "4. CMP 정밀연마 (CMP Polishing)",
+        "5. 레이저 검사 (Laser Inspection)"
+      ];
 
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
-  }
-  function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-    const words = text.split(' ');
-    let line = '';
-    for (let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + ' ';
-      if (ctx.measureText(testLine).width > maxWidth && n > 0) {
-        ctx.fillText(line, x, y);
-        line = words[n] + ' ';
-        y += lineHeight;
-      } else {
-        line = testLine;
-      }
-    }
-    ctx.fillText(line, x, y);
-  }
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
+      for (let i = 0; i < STAGES_COUNT; i++) {
+        const angle = (i / STAGES_COUNT) * Math.PI * 2; // 원형 360도 배치 각도
+        const x = Math.sin(angle) * RADIUS;
+        const z = -Math.cos(angle) * RADIUS;
 
-  /* =========================================================
-     SPATIAL UI — floating buttons & info cards
-     ========================================================= */
-  const interactiveButtons = []; // { mesh, action, baseColor, hoverColor }
+        // 장비 거치대 그룹
+        const stageGroup = new THREE.Group();
+        stageGroup.position.set(x, 0, z);
+        stageGroup.lookAt(0, 0, 0); // 중심 아바타를 바라보도록 설정
 
-  function makeButton({ label, position, color = 0x4dd0ff, width = 1.8, height = 0.6, action }) {
-    const tex = makeTextPanel(
-      [{ text: label, font: 'bold 44px sans-serif', color: '#ffffff' }],
-      { width: 512, height: 170, bg: 'rgba(10,14,20,0.9)', accent: '#' + color.toString(16).padStart(6, '0') }
-    );
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
-    mesh.position.copy(position);
-    mesh.userData.baseScale = 1;
-    scene.add(mesh);
+        // 받침대 (Podium)
+        const baseGeo = new THREE.CylinderGeometry(0.8, 1.0, 0.4, 32);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x22272e, metalness: 0.5 });
+        const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+        baseMesh.position.y = 0.2;
+        stageGroup.add(baseMesh);
 
-    const entry = { mesh, action, color };
-    interactiveButtons.push(entry);
-    return entry;
-  }
+        // 단계별 장비 3D 모델 및 애니메이션 노드 생성
+        const equipment = createEquipmentMesh(i);
+        equipment.position.y = 0.9;
+        stageGroup.add(equipment);
 
-  function makeInfoCard(stage) {
-    const tex = makeTextPanel([
-      { text: stage.title, font: 'bold 40px sans-serif', color: '#4dd0ff', blockHeight: 52 },
-      { text: stage.subtitle, font: 'italic 26px sans-serif', color: '#9fb3c8', blockHeight: 50 },
-      { text: stage.desc, font: '26px sans-serif', color: '#e8edf2', lineHeight: 32 },
-    ], { width: 1024, height: 420 });
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.4), mat);
-    mesh.position.set(stage.x, 3.4, -3.2);
-    scene.add(mesh);
-    return mesh;
-  }
+        // 3D Spatial UI 버튼 (장비 위에 떠있음)
+        const btnGeo = new THREE.BoxGeometry(1.2, 0.3, 0.1);
+        const btnMat = new THREE.MeshStandardMaterial({ color: 0x007acc, emissive: 0x003366 });
+        const btnMesh = new THREE.Mesh(btnGeo, btnMat);
+        btnMesh.position.set(0, 1.8, 0);
+        btnMesh.userData = { stageIndex: i, title: stageTitles[i], angle: angle };
+        stageGroup.add(btnMesh);
 
-  /* =========================================================
-     PARTICLE SYSTEM HELPER
-     ========================================================= */
-  function makeParticles(count, color, size, spread) {
-    const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(count * 3);
-    const speeds = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3 + 0] = (Math.random() - 0.5) * spread.x;
-      positions[i * 3 + 1] = Math.random() * spread.y;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * spread.z;
-      speeds[i] = 0.3 + Math.random() * 0.6;
-    }
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const mat = new THREE.PointsMaterial({ color, size, transparent: true, opacity: 0.85, depthWrite: false });
-    const points = new THREE.Points(geo, mat);
-    points.userData.speeds = speeds;
-    points.userData.spread = spread;
-    return points;
-  }
-  function updateRisingParticles(points, dt) {
-    const pos = points.geometry.attributes.position;
-    const speeds = points.userData.speeds;
-    const spread = points.userData.spread;
-    for (let i = 0; i < pos.count; i++) {
-      let y = pos.getY(i) + speeds[i] * dt;
-      if (y > spread.y) y = 0;
-      pos.setY(i, y);
-    }
-    pos.needsUpdate = true;
-  }
-  function updateSwirlParticles(points, dt, elapsed) {
-    const pos = points.geometry.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      const angle = elapsed * 1.5 + i;
-      const r = 0.4 + (i % 5) * 0.08;
-      pos.setX(i, Math.cos(angle) * r);
-      pos.setZ(i, Math.sin(angle) * r);
-    }
-    pos.needsUpdate = true;
-  }
+        interactiveObjects.push(btnMesh);
+        scene.add(stageGroup);
 
-  /* =========================================================
-     STAGE BUILDERS — 5 equipment scenes with .update(dt, elapsed)
-     ========================================================= */
-  class Stage1IngotGrowth {
-    constructor(data) {
-      this.group = new THREE.Group();
-      this.group.position.set(data.x, 0, 0);
-
-      const metal = new THREE.MeshStandardMaterial({ color: 0x8b9096, metalness: 0.6, roughness: 0.4 });
-      const chamber = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.9, 1.2, 20), metal);
-      chamber.position.y = 0.6;
-      this.group.add(chamber);
-
-      const melt = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.55, 1.55, 0.25, 20),
-        new THREE.MeshStandardMaterial({ color: 0xff5a1f, emissive: 0xff5a1f, emissiveIntensity: 1.4 })
-      );
-      melt.position.y = 1.2;
-      this.group.add(melt);
-      this.meltLight = new THREE.PointLight(0xff6a2a, 2.2, 8);
-      this.meltLight.position.y = 1.3;
-      this.group.add(this.meltLight);
-
-      for (const side of [-1, 1]) {
-        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 5.6, 8), metal);
-        post.position.set(side * 1.5, 3.4, 0);
-        this.group.add(post);
-      }
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 0.2), metal);
-      bar.position.set(0, 6.0, 0);
-      this.group.add(bar);
-
-      this.pullAssembly = new THREE.Group();
-      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.2, 8), metal);
-      this.pullAssembly.add(rod);
-      this.ingot = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.5, 0.5, 0.1, 20),
-        new THREE.MeshStandardMaterial({ color: 0xd9d4c8, roughness: 0.5 })
-      );
-      this.pullAssembly.add(this.ingot);
-      this.group.add(this.pullAssembly);
-
-      this.particles = makeParticles(70, 0xffaa55, 0.09, new THREE.Vector3(2.4, 3, 2.4));
-      this.particles.position.y = 1.2;
-      this.group.add(this.particles);
-
-      this.labelY = 6.6;
-      this.phase = 0;
-    }
-    update(dt, elapsed) {
-      this.phase = (this.phase + dt * 0.06) % 1; // full grow cycle ~16s
-      const growLen = THREE.MathUtils.lerp(0.1, 3.2, this.phase);
-      this.ingot.scale.y = growLen / 0.1;
-      const rodTopY = 4.8;
-      this.ingot.position.y = rodTopY - growLen / 2 - 1.3;
-      this.pullAssembly.position.y = 1.3 + this.phase * 1.6;
-      this.pullAssembly.rotation.y += dt * 1.2;
-      this.meltLight.intensity = 1.8 + Math.sin(elapsed * 6) * 0.4;
-      updateRisingParticles(this.particles, dt);
-    }
-  }
-
-  class Stage2WireSlicing {
-    constructor(data) {
-      this.group = new THREE.Group();
-      this.group.position.set(data.x, 0, 0);
-      const metal = new THREE.MeshStandardMaterial({ color: 0x8b9096, metalness: 0.6, roughness: 0.4 });
-      const wireMat = new THREE.MeshStandardMaterial({ color: 0xe6ebee, metalness: 0.8, roughness: 0.25 });
-      const waferMat = new THREE.MeshStandardMaterial({ color: data.color, roughness: 0.6 });
-
-      [[-1.7, -1.0], [1.7, -1.0], [-1.7, 1.0], [1.7, 1.0]].forEach(([x, z]) => {
-        const post = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.4, 0.15), metal);
-        post.position.set(x, 1.9, z);
-        this.group.add(post);
-      });
-      const top = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.15, 2.2), metal);
-      top.position.set(0, 3.6, 0);
-      this.group.add(top);
-
-      this.wires = [];
-      for (let i = 0; i < 9; i++) {
-        const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 3.6, 6), wireMat);
-        wire.rotation.z = Math.PI / 2;
-        wire.position.set(0, 2.0, -0.9 + i * 0.225);
-        this.group.add(wire);
-        this.wires.push(wire);
+        stageNodes.push({ group: stageGroup, equipment: equipment, stageIndex: i });
       }
 
-      this.feed = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.3, 18), new THREE.MeshStandardMaterial({ color: 0xb9b2a5 }));
-      this.feed.rotation.z = Math.PI / 2;
-      this.group.add(this.feed);
-
-      this.wafers = [];
-      for (let i = 0; i < 14; i++) {
-        const wafer = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.04, 24), waferMat);
-        wafer.visible = false;
-        this.group.add(wafer);
-        this.wafers.push(wafer);
-      }
-      this.stackCount = 0;
-
-      this.labelY = 4.2;
-      this.feedStartY = 3.1;
-      this.feedEndY = 1.0;
-      this.phase = 0;
-      this.cycleDuration = 3;
-      this.timer = 0;
+      window.addEventListener('resize', onWindowResize);
+      renderer.setAnimationLoop(render);
     }
-    update(dt, elapsed) {
-      this.wires.forEach((w, i) => {
-        w.position.x = Math.sin(elapsed * 9 + i * 0.5) * 0.04;
-      });
 
-      this.timer += dt;
-      const t = Math.min(1, this.timer / this.cycleDuration);
-      this.feed.position.y = THREE.MathUtils.lerp(this.feedStartY, this.feedEndY, t);
+    // 단계별 장비 프라이머리 3D 메쉬 생성 함수
+    function createEquipmentMesh(index) {
+      const group = new THREE.Group();
+      if (index === 0) {
+        // Stage 1: Ingot Growth Vat & Silicon Cylinder
+        const vat = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.6, 16), new THREE.MeshStandardMaterial({ color: 0xff4500, emissive: 0xaa2200 }));
+        const ingot = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.8, 16), new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8 }));
+        ingot.position.y = 0.5;
+        group.add(vat, ingot);
+      } else if (index === 1) {
+        // Stage 2: Wire Slicing Grid & Ingot
+        const ingot = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.9, 16), new THREE.MeshStandardMaterial({ color: 0x777777 }));
+        ingot.rotation.z = Math.PI / 2;
+        group.add(ingot);
+      } else if (index === 2) {
+        // Stage 3: Lapping Plates
+        const topPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16), new THREE.MeshStandardMaterial({ color: 0x444444 }));
+        const bottomPlate = topPlate.clone();
+        topPlate.position.y = 0.2;
+        bottomPlate.position.y = -0.2;
+        group.add(topPlate, bottomPlate);
+      } else if (index === 3) {
+        // Stage 4: CMP Mirror Wafer
+        const wafer = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.02, 32), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.95, roughness: 0.05 }));
+        group.add(wafer);
+      } else if (index === 4) {
+        // Stage 5: Laser Inspection Beam
+        const wafer = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.02, 32), new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.1 }));
+        const laser = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.02, 0.02), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+        laser.position.y = 0.15;
+        group.add(wafer, laser);
+      }
+      return group;
+    }
 
-      if (this.timer >= this.cycleDuration) {
-        this.timer = 0;
-        if (this.stackCount < this.wafers.length) {
-          const wafer = this.wafers[this.stackCount];
-          wafer.visible = true;
-          wafer.position.set(2.6, 0.1 + this.stackCount * 0.055, 0);
-          this.stackCount++;
-        } else {
-          this.wafers.forEach((w) => (w.visible = false));
-          this.stackCount = 0;
+    // 시선(Gaze Pointer) Raycasting 및 타이머 로직
+    function updateGaze() {
+      raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+      const intersects = raycaster.intersectObjects(interactiveObjects);
+
+      if (intersects.length > 0) {
+        const target = intersects[0].object;
+        if (currentGazeTarget !== target) {
+          currentGazeTarget = target;
+          gazeTimer = 0;
         }
-      }
-    }
-  }
 
-  class Stage3Lapping {
-    constructor(data) {
-      this.group = new THREE.Group();
-      this.group.position.set(data.x, 0, 0);
-      const metal = new THREE.MeshStandardMaterial({ color: 0x8b9096, metalness: 0.6, roughness: 0.4 });
-      const platenMat = new THREE.MeshStandardMaterial({ color: 0x2b2f33, roughness: 0.9 });
+        gazeTimer++;
+        const progress = Math.min(gazeTimer / GAZE_THRESHOLD, 1);
+        reticle.scale.set(1 + progress, 1 + progress, 1);
+        reticle.material.color.setHSL(0.3 * progress, 1, 0.5); // 파란색 -> 초록색 변환
 
-      this.bottomPlaten = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 0.25, 28), platenMat);
-      this.bottomPlaten.position.y = 0.5;
-      this.group.add(this.bottomPlaten);
-
-      this.wafer = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.06, 24),
-        new THREE.MeshStandardMaterial({ color: data.color, roughness: 0.5 }));
-      this.wafer.position.y = 0.68;
-      this.group.add(this.wafer);
-
-      this.topPlatenGroup = new THREE.Group();
-      this.topPlatenGroup.position.y = 0.9;
-      const topPlaten = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.2, 28), platenMat);
-      this.topPlatenGroup.add(topPlaten);
-      const armPost = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.0, 8), metal);
-      armPost.position.y = 1.3;
-      this.group.add(armPost);
-      this.group.add(this.topPlatenGroup);
-
-      this.slurry = makeParticles(60, 0x4aa8e8, 0.05, new THREE.Vector3(1, 0.3, 1));
-      this.slurry.position.y = 0.78;
-      this.group.add(this.slurry);
-
-      this.labelY = 3.9;
-    }
-    update(dt, elapsed) {
-      this.bottomPlaten.rotation.y += dt * 1.4;
-      this.topPlatenGroup.rotation.y -= dt * 1.1;
-      this.wafer.rotation.y += dt * 0.6;
-      updateSwirlParticles(this.slurry, dt, elapsed);
-    }
-  }
-
-  class Stage4Cmp {
-    constructor(data) {
-      this.group = new THREE.Group();
-      this.group.position.set(data.x, 0, 0);
-      const metal = new THREE.MeshStandardMaterial({ color: 0x8b9096, metalness: 0.6, roughness: 0.4 });
-
-      const pad = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 0.3, 28),
-        new THREE.MeshStandardMaterial({ color: 0x2b2f33, roughness: 0.85 }));
-      pad.position.y = 0.5;
-      this.group.add(pad);
-      this.pad = pad;
-
-      this.waferMat = new THREE.MeshStandardMaterial({ color: 0xbfc4c9, metalness: 0.1, roughness: 0.8 });
-      this.wafer = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.05, 24), this.waferMat);
-      this.group.add(this.wafer);
-
-      this.carrier = new THREE.Group();
-      const armPost = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.4, 8), metal);
-      armPost.position.set(0, 1.8, -1.7);
-      this.group.add(armPost);
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 1.9), metal);
-      arm.position.set(0, 2.9, -0.75);
-      this.group.add(arm);
-      const head = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.25, 20), metal);
-      this.carrier.add(head);
-      this.group.add(this.carrier);
-
-      this.labelY = 3.8;
-      this.orbitR = 0.5;
-    }
-    update(dt, elapsed) {
-      this.pad.rotation.y += dt * 1.8;
-      const ox = Math.cos(elapsed * 0.7) * this.orbitR;
-      const oz = Math.sin(elapsed * 0.7) * this.orbitR;
-      this.carrier.position.set(ox, 0.82, oz);
-      this.wafer.position.set(ox, 0.68, oz);
-      this.wafer.rotation.y += dt * 2.2;
-
-      // polish cycle: rough -> mirror -> reset, ~10s loop
-      const t = (Math.sin(elapsed * 0.63) + 1) / 2;
-      this.waferMat.metalness = THREE.MathUtils.lerp(0.1, 0.9, t);
-      this.waferMat.roughness = THREE.MathUtils.lerp(0.8, 0.05, t);
-    }
-  }
-
-  class Stage5Inspection {
-    constructor(data) {
-      this.group = new THREE.Group();
-      this.group.position.set(data.x, 0, 0);
-      const metal = new THREE.MeshStandardMaterial({ color: 0x8b9096, metalness: 0.6, roughness: 0.4 });
-
-      const stage = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.3, 24), metal);
-      stage.position.y = 0.5;
-      this.group.add(stage);
-
-      this.wafer = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.75, 0.75, 0.05, 24),
-        new THREE.MeshStandardMaterial({ color: 0xdfe3e6, metalness: 0.9, roughness: 0.05 })
-      );
-      this.wafer.position.y = 0.68;
-      this.group.add(this.wafer);
-
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.6, 8), metal);
-      post.position.set(-1.3, 1.3, 0);
-      this.group.add(post);
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.15, 0.15), metal);
-      arm.position.set(-0.4, 2.5, 0);
-      this.group.add(arm);
-
-      this.laser = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.015, 0.015, 1.6, 6),
-        new THREE.MeshStandardMaterial({ color: 0x4dffb8, emissive: 0x4dffb8, emissiveIntensity: 2 })
-      );
-      this.laser.position.set(0, 2.0, 0);
-      this.group.add(this.laser);
-
-      this.flash = new THREE.Mesh(
-        new THREE.SphereGeometry(0.06, 8, 8),
-        new THREE.MeshStandardMaterial({ color: 0xff4d6d, emissive: 0xff4d6d, emissiveIntensity: 2 })
-      );
-      this.flash.position.y = 0.7;
-      this.flash.visible = false;
-      this.group.add(this.flash);
-
-      this.labelY = 3.5;
-      this.flashTimer = 0;
-    }
-    update(dt, elapsed) {
-      const sweep = Math.sin(elapsed * 1.4) * 0.65;
-      this.laser.position.x = sweep;
-      this.laser.rotation.z = Math.PI / 2;
-      this.laser.position.y = 1.9;
-
-      this.flashTimer -= dt;
-      if (this.flashTimer <= 0) {
-        this.flash.visible = !this.flash.visible;
-        if (this.flash.visible) {
-          this.flash.position.set(sweep, 0.72, (Math.random() - 0.5) * 1.1);
+        if (gazeTimer >= GAZE_THRESHOLD) {
+          onSelectStage(target.userData);
+          gazeTimer = 0;
         }
-        this.flashTimer = this.flash.visible ? 0.15 : 1.6 + Math.random() * 1.5;
-      }
-    }
-  }
-
-  const STAGE_BUILDERS = [Stage1IngotGrowth, Stage2WireSlicing, Stage3Lapping, Stage4Cmp, Stage5Inspection];
-
-  /* =========================================================
-     BUILD ALL STAGES + spatial UI
-     ========================================================= */
-  const stageInstances = STAGES.map((data, i) => {
-    const instance = new STAGE_BUILDERS[i](data);
-    scene.add(instance.group);
-
-    const label = new THREE.Mesh(
-      new THREE.PlaneGeometry(3.0, 0.75),
-      new THREE.MeshBasicMaterial({
-        map: makeTextPanel(
-          [{ text: `${i + 1}. ${data.title.split('· ')[1] || data.title}`, font: 'bold 34px sans-serif', color: '#ffffff' }],
-          { width: 640, height: 160, accent: '#' + data.color.toString(16).padStart(6, '0') }
-        ),
-        transparent: true,
-      })
-    );
-    label.position.set(data.x, instance.labelY, 0);
-    scene.add(label);
-
-    const infoCard = makeInfoCard(data);
-    infoCard.visible = false;
-
-    return { data, instance, infoCard };
-  });
-
-  // navigation buttons adjacent to each stage: PREV / NEXT
-  stageInstances.forEach(({ data }, i) => {
-    if (i > 0) {
-      makeButton({
-        label: '◀ PREV',
-        position: new THREE.Vector3(data.x - 2.6, 1.5, 2.6),
-        color: 0x4dd0ff,
-        action: () => goToStage(i - 1),
-      });
-    }
-    if (i < STAGES.length - 1) {
-      makeButton({
-        label: 'NEXT ▶',
-        position: new THREE.Vector3(data.x + 2.6, 1.5, 2.6),
-        color: 0x4dd0ff,
-        action: () => goToStage(i + 1),
-      });
-    }
-  });
-
-  // Global AUTO PLAY button near Stage 1
-  const autoPlayBtn = makeButton({
-    label: '▶ AUTO PLAY TOUR',
-    position: new THREE.Vector3(STAGES[0].x, 2.5, 2.6),
-    color: 0xffd24d,
-    width: 2.4,
-    action: () => toggleAutoPlay(),
-  });
-
-  /* =========================================================
-     NAVIGATION — smooth dolly movement between stages
-     ========================================================= */
-  let currentStage = 0;
-  let navTarget = new THREE.Vector3(STAGES[0].x, 0, 5.5);
-  let navRotY = 0;
-  cameraDolly.position.copy(navTarget);
-
-  function goToStage(index) {
-    currentStage = index;
-    const data = STAGES[index];
-    navTarget = new THREE.Vector3(data.x, 0, 5.5);
-    navRotY = 0;
-    stageInstances.forEach((s, i) => (s.infoCard.visible = i === index));
-  }
-  goToStage(0);
-
-  let autoPlaying = false;
-  let autoTimer = 0;
-  const AUTO_STAGE_DURATION = 6; // seconds per stage
-  function toggleAutoPlay() {
-    autoPlaying = !autoPlaying;
-    autoTimer = 0;
-    if (autoPlaying) goToStage(0);
-  }
-  function updateAutoPlay(dt) {
-    if (!autoPlaying) return;
-    autoTimer += dt;
-    if (autoTimer >= AUTO_STAGE_DURATION) {
-      autoTimer = 0;
-      if (currentStage < STAGES.length - 1) {
-        goToStage(currentStage + 1);
       } else {
-        autoPlaying = false;
+        currentGazeTarget = null;
+        gazeTimer = 0;
+        reticle.scale.set(1, 1, 1);
+        reticle.material.color.set(0x00ffff);
       }
     }
-  }
 
-  /* =========================================================
-     GAZE RETICLE + DWELL INTERACTION (hands-free WebXR)
-     ========================================================= */
-  const reticleRing = new THREE.Mesh(
-    new THREE.RingGeometry(0.02, 0.026, 32),
-    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthTest: false })
-  );
-  reticleRing.position.set(0, 0, -3);
-  reticleRing.renderOrder = 999;
-  camera.add(reticleRing);
-
-  const reticleFill = new THREE.Mesh(
-    new THREE.CircleGeometry(0.024, 32),
-    new THREE.MeshBasicMaterial({ color: 0x4dd0ff, transparent: true, opacity: 0.85, depthTest: false })
-  );
-  reticleFill.position.set(0, 0, -2.999);
-  reticleFill.renderOrder = 999;
-  reticleFill.scale.setScalar(0.001);
-  camera.add(reticleFill);
-  scene.add(camera); // ensure camera (and its reticle children) participate in matrix updates
-
-  const raycaster = new THREE.Raycaster();
-  const rayOrigin = new THREE.Vector3();
-  const rayDir = new THREE.Vector3();
-
-  const DWELL_TIME = 1.5;
-  let hovered = null;
-  let dwell = 0;
-
-  function updateGaze(dt) {
-    camera.getWorldPosition(rayOrigin);
-    camera.getWorldDirection(rayDir);
-    raycaster.set(rayOrigin, rayDir);
-
-    const meshes = interactiveButtons.map((b) => b.mesh);
-    const hits = raycaster.intersectObjects(meshes, false);
-    const hitEntry = hits.length ? interactiveButtons.find((b) => b.mesh === hits[0].object) : null;
-
-    if (hitEntry) {
-      if (hitEntry !== hovered) {
-        hovered = hitEntry;
-        dwell = 0;
-      }
-      dwell += dt;
-      const t = Math.min(1, dwell / DWELL_TIME);
-      reticleFill.scale.setScalar(THREE.MathUtils.lerp(0.001, 1, t));
-      reticleRing.material.color.setHex(0x4dd0ff);
-
-      if (dwell >= DWELL_TIME) {
-        hovered.action();
-        dwell = 0;
-        hovered = null;
-        reticleFill.scale.setScalar(0.001);
-      }
-    } else {
-      hovered = null;
-      dwell = 0;
-      reticleFill.scale.setScalar(0.001);
-      reticleRing.material.color.setHex(0xffffff);
-    }
-  }
-
-  /* =========================================================
-     DESKTOP PREVIEW CONTROLS (non-VR only, for testing before headset)
-     ========================================================= */
-  let previewYaw = 0, previewPitch = 0, dragging = false, lastX = 0, lastY = 0;
-  renderer.domElement.addEventListener('pointerdown', (e) => {
-    if (renderer.xr.isPresenting) return;
-    dragging = true; lastX = e.clientX; lastY = e.clientY;
-  });
-  window.addEventListener('pointerup', () => (dragging = false));
-  window.addEventListener('pointermove', (e) => {
-    if (!dragging || renderer.xr.isPresenting) return;
-    previewYaw -= (e.clientX - lastX) * 0.004;
-    previewPitch -= (e.clientY - lastY) * 0.004;
-    previewPitch = Math.max(-1.3, Math.min(1.3, previewPitch));
-    lastX = e.clientX; lastY = e.clientY;
-  });
-
-  /* =========================================================
-     ANIMATION LOOP — driven by renderer.setAnimationLoop (WebXR compliant)
-     ========================================================= */
-  const clock = new THREE.Clock();
-
-  renderer.setAnimationLoop((timestamp, frame) => {
-    const dt = Math.min(clock.getDelta(), 0.1);
-    const elapsed = clock.elapsedTime;
-
-    // smooth dolly movement toward the selected stage
-    cameraDolly.position.lerp(navTarget, Math.min(1, dt * 2.2));
-    cameraDolly.rotation.y += (navRotY - cameraDolly.rotation.y) * Math.min(1, dt * 2.2);
-
-    if (!renderer.xr.isPresenting) {
-      camera.rotation.set(previewPitch, previewYaw, 0, 'YXZ');
+    // 선택된 장비 방향으로 카메라/아바타 회전
+    function onSelectStage(data) {
+      const targetAngle = -data.angle;
+      cameraGroup.rotation.y = targetAngle; // 선택된 장비 정면을 바라보도록 링 회전
     }
 
-    stageInstances.forEach(({ instance }) => instance.update(dt, elapsed));
-    updateAutoPlay(dt);
-    updateGaze(dt);
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
 
-    renderer.render(scene, camera);
-  });
+    // WebXR 메인 애니메이션 루프
+    function render(time) {
+      updateGaze();
+
+      // 5개 장비 연속 회전 애니메이션
+      stageNodes.forEach((node) => {
+        node.equipment.rotation.y += 0.01;
+      });
+
+      renderer.render(scene, camera);
+    }
   </script>
 </body>
 </html>
