@@ -10,7 +10,7 @@ button{position:fixed;z-index:20;padding:12px 18px;background:rgba(0,0,0,.65);co
 #vr{right:16px;bottom:22px}#exit{right:16px;top:12px;display:none}
 body.vr #hud,body.vr #vr{display:none}body.vr #exit{display:block}
 body.fl #app{position:absolute;top:0;left:100%;width:100vh;height:100vw;transform-origin:0 0;transform:rotate(90deg)}
-body.fl #exit{transform:rotate(90deg)}
+body.fl #exit{transform:none}
 #err{display:none;position:fixed;inset:0;z-index:99;background:rgba(20,0,0,.92);color:#f88;font:13px monospace;white-space:pre-wrap;padding:20px;overflow:auto}
 </style>
 <script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
@@ -243,9 +243,30 @@ const cv=renderer.domElement;cv.addEventListener('pointerdown',e=>{if(vr.on){wal
 addEventListener('pointerup',()=>walk=drag=false);addEventListener('pointermove',e=>{if(!drag||vr.on)return;player.yaw-=(e.clientX-lx)*.005;player.pitch=THREE.MathUtils.clamp(player.pitch-(e.clientY-ly)*.005,-1.3,1.3);lx=e.clientX;ly=e.clientY});
 
 /* ================= VR (Cardboard) : 좌/우 분할 + 자이로 + 가로 보정 ================= */
-const vr={on:false,fl:false,need:true,dev:new THREE.Quaternion(),off:new THREE.Quaternion()},DG=Math.PI/180,Q1=new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5)),AZ=new THREE.Vector3(0,0,1),AY=new THREE.Vector3(0,1,0);
-function devQ(e){if(e.alpha==null)return;const o=(screen.orientation?screen.orientation.angle:window.orientation||0)*DG;vr.dev.setFromEuler(new THREE.Euler(e.beta*DG,e.alpha*DG,-e.gamma*DG,'YXZ')).multiply(Q1).multiply(new THREE.Quaternion().setFromAxisAngle(AZ,-o));
-if(vr.need){vr.need=false;vr.off.setFromAxisAngle(AY,-new THREE.Euler().setFromQuaternion(vr.dev,'YXZ').y)}}
+const vr={on:false,fl:false,need:true,dev:new THREE.Quaternion(),off:new THREE.Quaternion(),roll:new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),Math.PI/2)},DG=Math.PI/180,AY=new THREE.Vector3(0,1,0);
+const zee = new THREE.Vector3(0, 0, 1);
+const euler = new THREE.Euler();
+const q0 = new THREE.Quaternion();
+const q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+
+function devQ(e){
+  if(e.alpha == null) return;
+  const alpha = e.alpha ? e.alpha * DG : 0;
+  const beta = e.beta ? e.beta * DG : 0;
+  const gamma = e.gamma ? e.gamma * DG : 0;
+  const orient = (screen.orientation ? screen.orientation.angle : window.orientation || 0) * DG;
+
+  euler.set(beta, alpha, -gamma, 'ZXY');
+  vr.dev.setFromEuler(euler);
+  vr.dev.multiply(q1);
+  q0.setFromAxisAngle(zee, -orient);
+  vr.dev.multiply(q0);
+
+  if(vr.need){
+    vr.need = false;
+    vr.off.setFromAxisAngle(AY, -new THREE.Euler().setFromQuaternion(vr.dev, 'YXZ').y);
+  }
+}
 const size=()=>vr.fl?[innerHeight,innerWidth]:[innerWidth,innerHeight];
 function resize(){const[w,h]=size();renderer.setSize(w,h);camera.aspect=(vr.on?w/2:w)/h;camera.updateProjectionMatrix()}
 function fit(){vr.fl=vr.on&&innerWidth<innerHeight;document.body.classList.toggle('fl',vr.fl);resize()}
@@ -257,7 +278,7 @@ function eye(o,x,w,h){const p=camera.position.clone();camera.position.add(new TH
 /* ================= 루프 ================= */
 const clock=new THREE.Clock(),fw=new THREE.Vector3(),rt=new THREE.Vector3(),ORDER=['normal','running','standby','warning','maint'];
 fit();renderer.setAnimationLoop(()=>{const dt=Math.min(clock.getDelta(),.1),t=clock.elapsedTime;
-if(vr.on)camera.quaternion.copy(vr.off).multiply(vr.dev);else camera.rotation.set(player.pitch,player.yaw,0,'YXZ');
+if(vr.on)camera.quaternion.copy(vr.off).multiply(vr.dev).multiply(vr.roll);else camera.rotation.set(player.pitch,player.yaw,0,'YXZ');
 camera.getWorldDirection(fw);fw.y=0;fw.normalize();rt.set(-fw.z,0,fw.x);
 const f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)+(walk?1:0),s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0),sp=(keys.ShiftLeft?3.2:1.6)*dt;
 if(f||s)move((fw.x*f+rt.x*s)*sp,(fw.z*f+rt.z*s)*sp);camera.position.copy(player.pos);
