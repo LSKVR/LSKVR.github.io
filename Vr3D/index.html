@@ -1,63 +1,268 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>VR 숲 - 카드보드 테스트</title>
-<link rel="stylesheet" href="css/style.css" />
-
-<!-- 구형 브라우저에서도 importmap 이 동작하도록 폴리필 추가 -->
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Process 01 · 웨이퍼 투입/산화 공정 디지털 트윈</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;font-family:-apple-system,"Malgun Gothic",sans-serif;user-select:none;-webkit-user-select:none}
+#app{position:fixed;inset:0}#app canvas{display:block;touch-action:none}
+#hud{position:fixed;top:12px;left:12px;z-index:10;color:#fff;background:rgba(0,0,0,.55);padding:10px 14px;border-radius:8px;font-size:12.5px;line-height:1.6;pointer-events:none}
+button{position:fixed;z-index:20;padding:12px 18px;background:rgba(0,0,0,.65);color:#fff;border:2px solid #fff;border-radius:10px;font-size:15px}
+#vr{right:16px;bottom:22px}#exit{right:16px;top:12px;display:none}
+body.vr #hud,body.vr #vr{display:none}body.vr #exit{display:block}
+body.fl #app{position:absolute;top:0;left:100%;width:100vh;height:100vw;transform-origin:0 0;transform:rotate(90deg)}
+body.fl #exit{transform:rotate(90deg)}
+#err{display:none;position:fixed;inset:0;z-index:99;background:rgba(20,0,0,.92);color:#f88;font:13px monospace;white-space:pre-wrap;padding:20px;overflow:auto}
+</style>
 <script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
-
-<!-- Three.js 최신 안정 버전을 ES Module 로 로드 -->
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-  }
-}
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head><body>
+<div id="app"></div>
+<div id="hud"><b>Process 01 · 웨이퍼 투입 / 산화 공정실</b><br>WASD 이동 · Shift 달리기 · 드래그 시점<br>장비를 바라보면 하이라이트 + 상태 표시<br>1~9 장비 앞으로 이동 · 0 중앙 · T 상태 LED 테스트</div>
+<button id="vr">🥽 VR (Cardboard)</button><button id="exit">✕ VR 종료</button><div id="err"></div>
+<script>
+const se=m=>{const e=document.getElementById('err');e.style.display='block';e.textContent+=m+'\n\n'};
+addEventListener('error',e=>se(e.target&&e.target.src?'[로드 실패] '+e.target.src:'[오류] '+e.message+(e.filename?'\n'+e.filename+':'+e.lineno:'')),true);
+addEventListener('unhandledrejection',e=>se('[Promise] '+(e.reason&&e.reason.message||e.reason)));
 </script>
-</head>
-<body>
-  <div id="app"></div>
+<script type="module">
+import * as THREE from 'three';
+import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 
-  <div id="info">
-    PC: 드래그로 시점 회전, WASD로 이동<br/>
-    모바일: 화면 하단 버튼으로 VR(카드보드) 모드 진입
-  </div>
+/* ================= CONFIG : 배치는 데이터 (x,z,ry 수정으로 설계도에 맞춰 조정) ================= */
+const ROOM={w:22,d:17,h:4.5},EYE=1.65;
+const EQ=[
+{id:'LoadPort',ko:'로드 포트',en:'Wafer Load Port',no:'LP-01',x:-9.4,z:-4.2,ry:90,b:loadPort,k:['STATUS','FOUP','POWER'],d:'FOUP을 도킹해 웨이퍼를 공정실로 투입하는 인터페이스'},
+{id:'CassetteStation',ko:'카세트 스테이션',no:'CS-01',x:-9.4,z:0.2,ry:90,b:cassette,k:['STATUS','SLOT','POWER'],d:'웨이퍼 카세트를 보관하고 대기시키는 스테이션'},
+{id:'WaferUnloader',ko:'웨이퍼 언로더',no:'UL-01',x:-9.3,z:4.6,ry:90,b:unloader,k:['STATUS','FOUP','POWER'],d:'공정이 끝난 웨이퍼를 FOUP으로 반출하는 장치'},
+{id:'OxidationFurnace',ko:'산화 장비',no:'FRN-01',x:0,z:-6.9,ry:0,b:furnace,k:['STATUS','TEMP','PRESS','POWER','GAS'],d:'웨이퍼 표면에 산화막을 형성하는 핵심 공정 장비'},
+{id:'Inspection',ko:'검사 장비',no:'INS-01',x:9.3,z:-3.9,ry:-90,b:inspection,k:['STATUS','STAGE','POWER'],d:'광학계로 웨이퍼 표면 상태를 검사하는 장비'},
+{id:'TransferRobot',ko:'반송 로봇',no:'RB-01',x:9.2,z:2.4,ry:-90,b:robot,k:['STATUS','AXIS','POWER'],d:'웨이퍼를 장비 사이로 반송하는 다관절 로봇'},
+{id:'GasCabinet',ko:'공정 가스 공급장치',no:'GC-01',x:-6.5,z:7.5,ry:180,b:gas,k:['STATUS','PRESS','GAS'],d:'공정 가스를 보관하고 배관으로 공급'},
+{id:'Scrubber',ko:'배기 / 스크러버',no:'SCR-01',x:0,z:7.5,ry:180,b:scrubber,k:['STATUS','FLOW','POWER'],d:'공정 배기를 처리하는 배기 처리 장치'},
+{id:'Chiller',ko:'냉각장치',no:'CH-01',x:6.5,z:7.5,ry:180,b:chiller,k:['STATUS','TEMP','PRESS'],d:'장비에 냉각수를 순환 공급하는 산업용 칠러'}];
+EQ.forEach(e=>e.en=e.en||e.id.replace(/([A-Z])/g,' $1').trim());
+const STATE={normal:['정상',0x2ecc71],running:['작동 중',0x3aa0ff],standby:['대기',0xffd23f],warning:['경고',0xff8a00],maint:['점검 필요',0xff3b3b]};
+const TW={};EQ.forEach(e=>TW[e.id]={state:'standby',vals:{},leds:[],tower:[],screens:[],anim:null});
+let focus=null;
 
-  <button id="vr-button">🥽 VR 모드로 보기</button>
-  <button id="exit-vr">✕ VR 종료</button>
+/* ================= 재질 / 텍스처 ================= */
+const S=(c,m,r,o)=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:r,...o});
+const B=o=>new THREE.MeshBasicMaterial(o);
+const tx=(w,h,f,rep)=>{const c=document.createElement('canvas');c.width=w;c.height=h;f(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;if(rep)t.wrapS=t.wrapT=THREE.RepeatWrapping;return t};
+const M={white:S(0xf0f3f5,.1,.5),gray:S(0xcdd3d8,.25,.5),dark:S(0x3a4149,.6,.5),steel:S(0xd3d8dc,.9,.3),alu:S(0xb6bdc4,.85,.4),black:S(0x14171b,.2,.6),
+glass:S(0xcfeaf5,0,.05,{transparent:true,opacity:.2,depthWrite:false}),smoke:S(0x46586a,0,.1,{transparent:true,opacity:.5,depthWrite:false}),
+yellow:S(0xf2c400,.3,.5),blue:S(0x2f7fd1,.4,.45),lblue:S(0x6db8f0,.4,.45),red:S(0xd23b2f,.3,.5),green:S(0x2e9e5b,.3,.5),wafer:S(0x8fa4c4,.95,.12),navy:S(0x1f3a63,.4,.5)};
+M.dial=B({map:tx(64,64,x=>{x.fillStyle='#fff';x.fillRect(0,0,64,64);x.strokeStyle='#222';x.lineWidth=3;x.beginPath();x.arc(32,32,26,.8*Math.PI,2.2*Math.PI);x.stroke();x.strokeStyle='#d22';x.beginPath();x.moveTo(32,32);x.lineTo(46,22);x.stroke()})});
+M.hazard=B({map:tx(128,32,x=>{x.fillStyle='#f2c400';x.fillRect(0,0,128,32);x.fillStyle='#111';for(let i=-2;i<10;i++){x.beginPath();x.moveTo(i*16,32);x.lineTo(i*16+16,32);x.lineTo(i*16+32,0);x.lineTo(i*16+16,0);x.fill()}},1)});
+M.warn=B({transparent:true,map:tx(64,64,x=>{x.fillStyle='#f2c400';x.beginPath();x.moveTo(32,4);x.lineTo(60,58);x.lineTo(4,58);x.closePath();x.fill();x.fillStyle='#111';x.font='bold 34px sans-serif';x.textAlign='center';x.fillText('!',32,52)})});
+M.disp=B({map:tx(64,32,x=>{x.fillStyle='#051';x.fillRect(0,0,64,32);x.fillStyle='#4f8';x.font='bold 20px monospace';x.fillText('----',6,24)})});
+M.line=B({color:0xf2c400});
 
-  <!-- 문제 진단용: 에러가 나면 콘솔 없이도 화면에 바로 표시 -->
-  <div id="error-overlay"></div>
-  <script>
-    function showError(msg) {
-      var el = document.getElementById('error-overlay');
-      el.style.display = 'block';
-      el.textContent += msg + '\n\n';
-    }
-    window.addEventListener('error', function (e) {
-      var target = e.target;
-      if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
-        showError('[리소스 로드 실패] ' + (target.src || target.href) +
-          '\n(파일이 없거나, 서버가 .js 를 잘못된 MIME 타입으로 응답했을 수 있습니다)');
-      } else {
-        showError('[오류] ' + (e.message || e.error) + (e.filename ? '\n위치: ' + e.filename + ':' + e.lineno : ''));
-      }
-    }, true); // capture 단계: 리소스 로드 실패도 감지
-    window.addEventListener('unhandledrejection', function (e) {
-      showError('[Promise 오류] ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
-    });
-    if (!window.WebGLRenderingContext) {
-      showError('이 브라우저는 WebGL 을 지원하지 않습니다.');
-    } else {
-      var testCanvas = document.createElement('canvas');
-      var gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
-      if (!gl) showError('WebGL 컨텍스트를 생성할 수 없습니다. (그래픽 가속이 꺼져 있거나 브라우저 제한)');
-    }
-  </script>
+/* ================= 모델링 도구 (Kit) ================= */
+const add=(g,geo,m,x=0,y=0,z=0)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);g.add(o);return o};
+const box=(g,m,w,h,d,x,y,z,r=.012)=>{const s=Math.min(w,h,d);return add(g,s<.05?new THREE.BoxGeometry(w,h,d):new RoundedBoxGeometry(w,h,d,1,Math.min(r,s/2.5)),m,x,y,z)};
+const cyl=(g,m,r1,r2,h,x,y,z,ax='y',s=18)=>{const o=add(g,new THREE.CylinderGeometry(r1,r2,h,s),m,x,y,z);if(ax=='x')o.rotation.z=Math.PI/2;if(ax=='z')o.rotation.x=Math.PI/2;return o};
+const tor=(g,m,r,t,x,y,z,ry=0)=>{const o=add(g,new THREE.TorusGeometry(r,t,6,14),m,x,y,z);o.rotation.y=ry;return o};
+function pipe(g,m,P,r){const Y=new THREE.Vector3(0,1,0);P.forEach((p,i)=>{const b=new THREE.Vector3(...p);if(i){const a=new THREE.Vector3(...P[i-1]),d=b.clone().sub(a),L=d.length(),c=add(g,new THREE.CylinderGeometry(r,r,L,8),m);c.position.copy(a).addScaledVector(d,.5);c.quaternion.setFromUnitVectors(Y,d.normalize())}if(i&&i<P.length-1)add(g,new THREE.SphereGeometry(r*1.05,8,6),m,...p)})}
+const bolts=(g,x,y,z,w,h,ax='z')=>{(g.userData.bolts||(g.userData.bolts=[])).push(...[[-1,-1],[1,-1],[-1,1],[1,1]].map(([a,b])=>ax=='z'?[x+a*w/2,y+b*h/2,z,'z']:ax=='x'?[x,y+b*h/2,z+a*w/2,'x']:[x+a*w/2,y,z+b*h/2,'y']))};
+const gauge=(g,x,y,z)=>{cyl(g,M.steel,.05,.05,.04,x,y,z,'z',16);add(g,new THREE.CircleGeometry(.042,16),M.dial,x,y,z+.021)};
+const warnLabel=(g,x,y,z,ry=0)=>{add(g,new THREE.PlaneGeometry(.14,.14),M.warn,x,y,z).rotation.y=ry};
+function plate(g,t,w,h,x,y,z,ry=0,bg='#f2f4f5',fg='#111'){const W=512,H=Math.round(W*h/w);const o=add(g,new THREE.PlaneGeometry(w,h),B({map:tx(W,H,(c)=>{c.fillStyle=bg;c.fillRect(0,0,W,H);c.fillStyle=fg;c.font='bold '+Math.round(H*.55)+'px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(t,W/2,H/2)})}),x,y,z);o.rotation.y=ry;return o}
+function wafers(g,x,y,z,n,p,r=.15){const im=new THREE.InstancedMesh(new THREE.CylinderGeometry(r,r,.004,20),M.wafer,n),m=new THREE.Matrix4();for(let i=0;i<n;i++)im.setMatrixAt(i,m.makeTranslation(x,y+i*p,z));g.add(im)}
+function shell(g,m,w,h,d,x,y,z,t=.05){box(g,m,w,h,t,x,y,z-d/2+t/2);box(g,m,t,h,d,x-w/2+t/2,y,z);box(g,m,t,h,d,x+w/2-t/2,y,z);box(g,m,w,t,d,x,y+h/2-t/2,z);box(g,m,w,t,d,x,y-h/2+t/2,z);
+box(g,M.glass,w-.12,h-.12,.01,x,y,z+d/2-.02);[-1,1].forEach(s=>box(g,M.alu,.06,h,.06,x+s*(w/2-.03),y,z+d/2-.03))}
+/* 상태 연동 요소 (LED / 시그널 타워 / 화면) : dyn=병합 제외 */
+function led(g,id,x,y,z){const o=add(g,new THREE.SphereGeometry(.015,8,6),B({color:0xffd23f}),x,y,z);o.userData.dyn=true;TW[id].leds.push(o)}
+function tower(g,id,x,y,z){cyl(g,M.alu,.02,.02,.5,x,y+.25,z,'y',8);[0xff3030,0xffc800,0x30ff60].forEach((c,i)=>{const m=B({color:c});cyl(g,m,.05,.05,.08,x,y+.52+i*.09,z,'y',12).userData.dyn=true;TW[id].tower.push(m)})}
+function screen(g,id,w,h,x,y,z,ry=0){const c=document.createElement('canvas');c.width=256;c.height=160;const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const s=new THREE.Group();s.position.set(x,y,z);s.rotation.y=ry;s.userData.dyn=true;g.add(s);box(s,M.black,w+.04,h+.04,.03,0,0,0);add(s,new THREE.PlaneGeometry(w,h),B({map:t}),0,0,.017);TW[id].screens.push({t,c})}
+function finish(g){const Bs=g.userData.bolts||[];if(Bs.length){const im=new THREE.InstancedMesh(new THREE.CylinderGeometry(.011,.011,.008,6),M.steel,Bs.length),m=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),one=new THREE.Vector3(1,1,1);Bs.forEach((b,i)=>{e.set(b[3]=='z'?Math.PI/2:0,0,b[3]=='x'?Math.PI/2:0);m.compose(new THREE.Vector3(b[0],b[1],b[2]),q.setFromEuler(e),one);im.setMatrixAt(i,m)});g.add(im)}
+g.updateMatrixWorld(true);const by=new Map(),rm=[];
+g.traverse(o=>{if(!o.isMesh||o.isInstancedMesh)return;for(let p=o;p&&p!==g;p=p.parent)if(p.userData.dyn)return;if(!by.has(o.material))by.set(o.material,[]);by.get(o.material).push(o.geometry.clone().applyMatrix4(o.matrixWorld));rm.push(o)});
+rm.forEach(o=>o.parent.remove(o));by.forEach((l,m)=>{const mg=mergeGeometries(l);if(mg)g.add(new THREE.Mesh(mg,m))});return g}
+/* 다관절 로봇 암 (관절 그룹 = 애니메이션 가능) */
+function armRig(g,s,x,y,z){const r=new THREE.Group();r.position.set(x,y,z);r.userData.dyn=true;g.add(r);const l1=.7*s,l2=.6*s;
+cyl(r,M.steel,.11*s,.11*s,.2*s,0,0,0);box(r,M.white,l1,.1*s,.14*s,l1/2,.1*s,0);
+const j2=new THREE.Group();j2.position.set(l1,.1*s,0);r.add(j2);cyl(j2,M.steel,.09*s,.09*s,.18*s,0,0,0);box(j2,M.white,l2,.09*s,.12*s,l2/2,.09*s,0);
+const j3=new THREE.Group();j3.position.set(l2,.09*s,0);j2.add(j3);cyl(j3,M.dark,.07*s,.07*s,.14*s,0,0,0);
+[-1,1].forEach(a=>box(j3,M.alu,.3*s,.012,.03*s,.15*s,.05*s,a*.03*s));cyl(j3,M.wafer,.15*s,.15*s,.006,.2*s,.065*s,0);
+return t=>{const on=t!=null;r.rotation.y=on?Math.sin(t*.5)*1.1:.3;j2.rotation.y=on?Math.sin(t*.9)*1.0:-.6;j3.rotation.y=on?-Math.sin(t*.9)*.8:.3}}
+const animOf=(id,f)=>{TW[id].anim=(t,run)=>f(run?t:null)};
 
-  <script type="module" src="js/main.js"></script>
-</body>
-</html>
+/* ================= 장비 9종 ================= */
+function loadPort(id){const g=new THREE.Group();
+box(g,M.gray,2.5,1.9,.5,0,.95,-.3);box(g,M.dark,2.5,.12,.8,0,.06,-.15);
+[-.6,.6].forEach(x=>{box(g,M.steel,.8,.04,.7,x,.95,.3);box(g,M.black,.52,.5,.03,x,1.3,-.04);
+box(g,M.smoke,.36,.34,.4,x,1.14,.3);box(g,M.white,.34,.32,.02,x,1.14,.09);box(g,M.dark,.12,.03,.1,x,1.33,.3);cyl(g,M.steel,.02,.02,.05,x,1.37,.3,'y',8);wafers(g,x,1.0,.3,13,.022,.14);
+[-.1,0,.1].forEach(k=>led(g,id,x+k,.98,.64));bolts(g,x,1.3,-.055,.52,.5)});
+box(g,M.white,.35,.6,.25,1.45,1.0,-.15);screen(g,id,.28,.18,1.45,1.25,0);tower(g,id,1.1,1.9,-.3);
+plate(g,'LP-01',.3,.1,-1.0,1.75,-.052);warnLabel(g,1.1,.4,-.052);pipe(g,M.black,[[-1,.1,-.55],[-1,.1,-1]],.02);return finish(g)}
+
+function cassette(id){const g=new THREE.Group();
+box(g,M.steel,1.9,.05,.9,0,.98,0);box(g,M.gray,1.8,.6,.8,0,.65,0);[-1,1].forEach(a=>[-1,1].forEach(b=>box(g,M.alu,.06,.4,.06,a*.85,.2,b*.38)));box(g,M.dark,1.8,.06,.8,0,.05,0);
+[-.45,.45].forEach(x=>{box(g,M.alu,.36,.03,.36,x,1.02,0);box(g,M.alu,.01,.34,.34,x-.18,1.2,0);box(g,M.alu,.01,.34,.34,x+.18,1.2,0);box(g,M.alu,.36,.02,.36,x,1.38,0);box(g,M.alu,.36,.34,.01,x,1.2,-.18);wafers(g,x,1.06,0,25,.012)});
+box(g,M.glass,1.8,.5,.85,0,1.25,0);[-1,1].forEach(a=>[-1,1].forEach(b=>box(g,M.alu,.04,.5,.04,a*.9,1.25,b*.42)));box(g,M.alu,1.84,.03,.04,0,1.5,.42);
+[-.1,0,.1].forEach(k=>led(g,id,.75+k,.8,.41));screen(g,id,.3,.19,.65,.8,.45);tower(g,id,-.85,1.5,-.38);plate(g,'CS-01',.3,.1,-.6,.7,.405);warnLabel(g,.3,.7,.405);bolts(g,0,.65,.405,1.7,.5);return finish(g)}
+
+function unloader(id){const g=new THREE.Group();
+box(g,M.dark,2.2,.12,.9,0,.06,0);shell(g,M.white,1.3,1.6,.8,-.45,.9,0);const pose=armRig(g,.6,-.45,.8,0);box(g,M.dark,.3,.5,.3,-.45,.35,0);
+box(g,M.gray,.6,1.6,.8,.5,.9,0);box(g,M.steel,.5,.04,.6,.5,.95,.5);box(g,M.smoke,.36,.34,.4,.5,1.14,.5);wafers(g,.5,1.0,.5,13,.022,.14);[-.1,.1].forEach(k=>led(g,id,.5+k,.98,.8));
+for(let i=0;i<9;i++)cyl(g,M.alu,.03,.03,.5,.9,.16,.9+i*.16,'x',8);
+add(g,new THREE.PlaneGeometry(.5,.5),B({transparent:true,map:tx(128,128,c=>{c.fillStyle='rgba(30,140,60,.9)';c.fillRect(0,0,128,128);c.fillStyle='#fff';c.beginPath();c.moveTo(64,10);c.lineTo(110,70);c.lineTo(80,70);c.lineTo(80,118);c.lineTo(48,118);c.lineTo(48,70);c.lineTo(18,70);c.fill()})}),.4,.012,1.9).rotation.x=-Math.PI/2;
+screen(g,id,.28,.18,.95,1.3,.05);tower(g,id,-1.0,1.7,-.3);plate(g,'UL-01  EXIT',.5,.12,.5,1.75,.405);animOf(id,pose);return finish(g)}
+
+function furnace(id){const g=new THREE.Group();
+box(g,M.dark,5.2,.14,2.6,0,.07,0);shell(g,M.white,2.5,2.8,2.4,-1.3,1.54,0);
+[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>cyl(g,M.steel,.012,.012,1.0,-1.3+a*.16,1.0,-.3+b*.1,'y',6));cyl(g,M.steel,.2,.2,.04,-1.3,.5,-.3);wafers(g,-1.3,.6,-.3,40,.02);box(g,M.steel,.12,2.4,.12,-2.1,1.5,-.9);
+const pose=armRig(g,.55,-.65,.9,.5);box(g,M.dark,.25,.6,.25,-.65,.55,.5);
+box(g,M.white,2.6,3.0,2.4,1.25,1.64,0);
+cyl(g,M.steel,.82,.82,.8,1.3,3.4,-.2,'y',28);[3.15,3.4,3.65].forEach(y=>cyl(g,M.dark,.85,.85,.05,1.3,y,-.2,'y',28));cyl(g,M.steel,.3,.3,.35,1.3,3.95,-.2);cyl(g,M.steel,.36,.36,.05,1.3,4.1,-.2);
+box(g,M.dark,.015,2.6,.02,1.25,1.7,1.205);[.95,1.55].forEach(x=>cyl(g,M.steel,.015,.015,.3,x,1.5,1.24));
+for(let i=0;i<8;i++)box(g,M.dark,.9,.02,.03,.6,.3+i*.07,1.215);
+box(g,M.dark,.9,.55,.06,.6,2.4,1.23);for(let i=0;i<4;i++)add(g,new THREE.PlaneGeometry(.16,.08),M.disp,.27+i*.22,2.5,1.262);[0,1,2,3].forEach(i=>led(g,id,.3+i*.2,2.25,1.262));
+[[.95,2.2],[1.55,2.2]].forEach(([x,y])=>box(g,M.alu,.5,.4,.02,x+.35,y,1.215));
+cyl(g,M.steel,.02,.02,.5,0,1.15,1.35);box(g,M.dark,.05,.05,.3,0,1.4,1.3);screen(g,id,.6,.38,0,1.6,1.5);
+cyl(g,M.yellow,.05,.05,.03,2.3,1.4,1.22,'z');cyl(g,M.red,.035,.03,.04,2.3,1.4,1.245,'z');gauge(g,2.3,1.0,1.21);gauge(g,2.1,1.0,1.21);
+pipe(g,M.blue,[[2.9,1.3,.5],[2.9,.6,.5],[2.55,.6,.5]],.04);pipe(g,M.lblue,[[3.05,1.3,.9],[3.05,.9,.9],[2.55,.9,.9]],.04);tor(g,M.red,.06,.012,2.9,.9,.5);tor(g,M.red,.06,.012,3.05,1.1,.9);
+tower(g,id,-2.3,2.94,.8);plate(g,'FRN-01',.5,.14,-1.9,3.0,1.212);warnLabel(g,2.3,2.6,1.212);warnLabel(g,-2.35,2.6,1.212);bolts(g,1.25,1.7,1.21,2.4,2.7);bolts(g,-1.3,1.54,1.2,2.3,2.6);
+animOf(id,pose);return finish(g)}
+
+function inspection(id){const g=new THREE.Group();
+box(g,M.white,2.2,1.05,1.5,0,.6,0);[-1,1].forEach(a=>[-1,1].forEach(b=>cyl(g,M.dark,.06,.07,.08,a*1.0,.04,b*.65,'y',10)));
+shell(g,M.gray,2.0,1.0,1.4,0,1.65,0);box(g,M.dark,1.8,.15,1.2,0,1.2,0);cyl(g,M.steel,.4,.4,.05,0,1.3,.05);cyl(g,M.wafer,.3,.3,.008,0,1.33,.05);
+[-1,1].forEach(a=>box(g,M.alu,.06,.7,.06,a*.85,1.6,-.4));box(g,M.alu,1.8,.08,.1,0,1.95,-.4);
+const head=new THREE.Group();head.userData.dyn=true;head.position.set(0,1.75,-.3);g.add(head);cyl(head,M.black,.07,.07,.3,0,0,.1);cyl(head,M.steel,.09,.09,.03,0,.1,.1);box(head,M.dark,.16,.12,.14,0,.2,.1);
+box(g,M.dark,.6,.1,.6,.55,2.2,0);
+cyl(g,M.steel,.02,.02,.7,1.35,1.2,.3);box(g,M.dark,.05,.05,.4,1.35,1.55,.5);screen(g,id,.5,.32,1.35,1.75,.72);box(g,M.dark,.5,.02,.2,1.35,1.0,.6);
+box(g,M.gray,.4,.5,.3,-1.3,.8,.8);box(g,M.smoke,.25,.24,.28,-1.3,1.1,.98);[-.05,.05].forEach(k=>led(g,id,-1.3+k,.95,.96));
+[0,1,2].forEach(i=>led(g,id,.6+i*.08,.9,.752));tower(g,id,-.9,2.15,.5);plate(g,'INS-01',.4,.12,-.6,.95,.752);warnLabel(g,.9,.6,.752);bolts(g,0,.6,.752,2.0,.9);
+animOf(id,p=>{head.position.x=p==null?0:Math.sin(p*.9)*.6});return finish(g)}
+
+function robot(id){const g=new THREE.Group();
+cyl(g,M.dark,.42,.5,.25,0,.125,0);cyl(g,M.gray,.3,.34,.7,0,.6,0);cyl(g,M.steel,.24,.24,.06,0,.98,0);tor(g,M.dark,.3,.015,0,.4,0).rotation.x=Math.PI/2;
+const pose=armRig(g,1.2,0,1.0,0);
+[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>box(g,M.alu,.06,1.3,.06,a*1.2,.65,b*1.2));
+[[0,1.2,0],[0,-1.2,0],[1.2,0,1],[-1.2,0,1]].forEach(([x,z,r])=>{const o=box(g,M.glass,2.4,1.0,.015,x,.75,z);o.rotation.y=r?Math.PI/2:0;const k=box(g,M.hazard,2.4,.01,.12,x,.006,z);k.rotation.y=r?Math.PI/2:0});
+box(g,M.white,.6,1.1,.6,2.0,.55,0);screen(g,id,.34,.22,2.0,.9,.302);[0,1,2].forEach(i=>led(g,id,1.85+i*.12,.65,.302));
+cyl(g,M.yellow,.06,.06,.03,2.2,.45,.305,'z');cyl(g,M.red,.04,.04,.04,2.2,.45,.325,'z');tower(g,id,2.0,1.1,0);plate(g,'RB-01',.4,.12,2.0,1.0,.302);warnLabel(g,-1.19,.9,1.21);bolts(g,0,.13,0,.7,.7,'y');
+animOf(id,pose);return finish(g)}
+
+function gas(id){const g=new THREE.Group();
+box(g,M.dark,1.6,.1,.9,0,.05,0);shell(g,M.white,1.6,2.3,.9,0,1.25,0);box(g,M.yellow,1.62,.06,.92,0,2.25,0);
+[-.45,0,.45].forEach((x,i)=>{cyl(g,[M.green,M.blue,M.alu][i],.11,.11,1.3,x,.75,-.05,'y',14);cyl(g,M.steel,.05,.11,.12,x,1.46,-.05);cyl(g,M.steel,.03,.03,.1,x,1.56,-.05,'y',8);box(g,M.red,.1,.03,.03,x,1.63,-.05);gauge(g,x,1.8,.1)});
+for(let i=0;i<6;i++)box(g,M.navy,.12,.3,.1,-.6+i*.24,2.0,-.1);pipe(g,M.steel,[[-.7,1.7,-.25],[.7,1.7,-.25]],.015);
+pipe(g,M.yellow,[[-.5,2.0,-.2],[-.5,2.55,-.2]],.03);pipe(g,M.yellow,[[-.3,2.0,-.2],[-.3,2.55,-.2]],.03);
+screen(g,id,.3,.19,.5,.45,.48);[0,1,2].forEach(i=>led(g,id,.3+i*.08,.6,.462));tower(g,id,.65,2.4,.3);
+plate(g,'GAS · WARNING',.9,.1,-.3,.25,.462,0,'#f2c400');warnLabel(g,.62,.85,.462);plate(g,'GC-01',.3,.1,-.6,2.15,.462);bolts(g,0,1.25,.462,1.4,2.0);
+box(g,M.steel,.03,.4,.03,.75,1.2,.45);return finish(g)}
+
+function scrubber(id){const g=new THREE.Group();
+box(g,M.dark,1.6,.1,1.2,0,.05,0);cyl(g,M.gray,.7,.7,3.0,0,1.6,0,'y',32);cyl(g,M.gray,.7,.35,.4,0,3.3,0,'y',32);[.6,1.4,2.2,2.9].forEach(y=>cyl(g,M.alu,.74,.74,.06,0,y,0,'y',32));
+cyl(g,M.gray,.2,.2,1.1,0,3.95,0);cyl(g,M.alu,.25,.25,.05,0,3.45,0);pipe(g,M.gray,[[-.6,3.5,0],[-.6,2.8,0],[-.35,2.8,0]],.11);
+cyl(g,M.steel,.18,.18,.04,0,1.2,.71,'z');bolts(g,0,1.2,.735,.3,.3);cyl(g,M.glass,.03,.03,.9,.45,1.0,.6,'y',8);cyl(g,M.lblue,.02,.02,.5,.45,.8,.6,'y',8);
+box(g,M.gray,.7,.6,.6,-.95,.35,.1);cyl(g,M.dark,.12,.12,.3,.95,.25,.3,'x');pipe(g,M.blue,[[.75,.25,.3],[.75,.25,.5],[.2,.25,.5]],.03);
+box(g,M.white,.5,.8,.35,-.85,1.3,.75);screen(g,id,.3,.19,-.85,1.5,.93);[0,1].forEach(i=>led(g,id,-.95+i*.1,1.15,.93));tower(g,id,.55,2.5,.5);plate(g,'SCR-01',.4,.12,0,2.0,.71);warnLabel(g,.3,1.6,.71);return finish(g)}
+
+function chiller(id){const g=new THREE.Group();
+box(g,M.dark,1.3,.1,1.0,0,.05,0);box(g,M.gray,1.3,1.5,1.0,0,.85,0);
+[-.32,.32].forEach(x=>{tor(g,M.dark,.28,.02,x,1.62,0).rotation.x=Math.PI/2;cyl(g,M.dark,.05,.05,.05,x,1.62,0);for(let k=0;k<4;k++){const s=box(g,M.dark,.56,.012,.02,x,1.6,0);s.rotation.y=k*Math.PI/4}});
+for(let i=0;i<8;i++)box(g,M.dark,.4,.02,.02,-.3,.3+i*.06,.51);
+box(g,M.dark,.5,.5,.03,.3,1.1,.51);screen(g,id,.36,.22,.3,1.2,.53);[0,1,2].forEach(i=>led(g,id,.15+i*.12,.95,.53));box(g,M.red,.08,.12,.05,.5,.75,.53);
+cyl(g,M.dark,.1,.1,.28,.85,.4,.1,'x');cyl(g,M.steel,.14,.14,.08,.72,.4,.1,'x');pipe(g,M.blue,[[.5,1.6,.3],[.5,1.75,.3]],.04);pipe(g,M.lblue,[[.3,1.6,.3],[.3,1.75,.3]],.04);
+pipe(g,M.blue,[[.9,.4,.1],[.9,.4,-.3],[.9,1.2,-.3]],.035);tor(g,M.red,.06,.012,.9,.8,-.3,Math.PI/2);gauge(g,.55,1.45,.51);tower(g,id,-.5,1.6,-.3);plate(g,'CH-01',.3,.1,-.3,1.4,.512);warnLabel(g,.62,.55,.512);bolts(g,0,.85,.505,1.2,1.4);return finish(g)}
+
+/* ================= 공정실 / 유틸리티 ================= */
+function room(scene){const g=new THREE.Group();g.name='Room';const{w,d,h}=ROOM;
+const fT=tx(128,128,c=>{c.fillStyle='#d5dade';c.fillRect(0,0,128,128);c.strokeStyle='#aab2b9';c.lineWidth=2;c.strokeRect(0,0,128,128);c.fillStyle='#9aa3ab';for(let i=0;i<6;i++)for(let j=0;j<6;j++){c.beginPath();c.arc(14+i*20,14+j*20,3,0,7);c.fill()}},1);fT.repeat.set(w/.6,d/.6);
+const fl=new THREE.Mesh(new THREE.PlaneGeometry(w,d),S(0xffffff,.05,.35,{map:fT}));fl.rotation.x=-Math.PI/2;g.add(fl);
+const wT=tx(256,256,c=>{c.fillStyle='#eef1f3';c.fillRect(0,0,256,256);c.strokeStyle='#c4cbd1';c.lineWidth=3;c.strokeRect(0,0,256,256);c.fillStyle='#b9c1c8';c.fillRect(0,226,256,30);c.fillStyle='#8d979f';for(let i=0;i<20;i++)c.fillRect(6+i*12.5,232,7,18)},1);
+const wall=(L,x,z,ry)=>{const t=wT.clone();t.needsUpdate=true;t.repeat.set(L/1.2,2);const m=new THREE.Mesh(new THREE.PlaneGeometry(L,h),S(0xffffff,.05,.6,{map:t}));m.position.set(x,h/2,z);m.rotation.y=ry;g.add(m)};
+wall(w,0,-d/2,0);wall(w,0,d/2,Math.PI);wall(d,-w/2,0,Math.PI/2);wall(d,w/2,0,-Math.PI/2);
+const cT=tx(128,128,c=>{c.fillStyle='#f4f6f7';c.fillRect(0,0,128,128);c.strokeStyle='#b8c0c6';c.lineWidth=4;c.strokeRect(2,2,124,124);c.strokeStyle='#d3d8dc';c.lineWidth=1;for(let i=1;i<10;i++){c.beginPath();c.moveTo(12,12+i*10.4);c.lineTo(116,12+i*10.4);c.stroke()}},1);cT.repeat.set(w/1.2,d/1.2);
+const ce=new THREE.Mesh(new THREE.PlaneGeometry(w,d),S(0xffffff,0,.8,{map:cT}));ce.rotation.x=Math.PI/2;ce.position.y=h;g.add(ce);
+const P=[];for(let x=-9.6;x<=9.6;x+=2.4)for(let z=-7.2;z<=7.2;z+=2.4)P.push([x,z]);const lt=new THREE.InstancedMesh(new THREE.BoxGeometry(1.2,.04,.3),B({color:0xffffff}),P.length),m4=new THREE.Matrix4();P.forEach((p,i)=>lt.setMatrixAt(i,m4.makeTranslation(p[0],h-.03,p[1])));g.add(lt);
+[-1,1].forEach(s=>box(g,M.gray,.5,.4,d-1,s*(w/2-.35),h-.3,0));
+box(g,M.alu,.1,2.3,1.6,w/2-.05,1.15,6.2);box(g,M.glass,.06,2.1,.7,w/2-.06,1.1,5.75);box(g,M.glass,.06,2.1,.7,w/2-.06,1.1,6.65);plate(g,'출입구 · GOWNING',1.2,.16,w/2-.03,2.5,6.2,-Math.PI/2);plate(g,'EXIT',.5,.16,w/2-.03,2.75,6.2,-Math.PI/2,'#1e8c3c','#fff');
+plate(g,'PROCESS 01 · WAFER LOAD / OXIDATION',4.6,.5,-6.2,3.0,-d/2+.02,0,'#0f2a44','#fff');
+const ring=add(g,new THREE.RingGeometry(.35,.42,32),B({color:0x00a8ff}),0,.012,0);ring.rotation.x=-Math.PI/2;
+scene.add(finish(g));return g}
+function utilities(scene){const g=new THREE.Group();g.name='Utilities';
+pipe(g,M.yellow,[[-6,2.55,7.7],[-6,3.95,7.7],[-6,3.95,-7.6],[2.35,3.95,-7.6],[2.35,3.14,-7.6]],.03);pipe(g,M.yellow,[[-6.2,2.55,7.7],[-6.2,4.05,7.7],[-6.2,4.05,-7.8],[2.2,4.05,-7.8],[2.2,3.14,-7.8]],.03);
+pipe(g,M.gray,[[1.3,4.1,-7.1],[3.3,4.1,-7.1],[3.3,4.1,7.5],[.6,4.1,7.5],[.6,3.5,7.5]],.13);
+pipe(g,M.blue,[[6,1.75,7.2],[6,3.8,7.2],[6,3.8,-6.4],[2.9,3.8,-6.4],[2.9,1.3,-6.4]],.04);pipe(g,M.lblue,[[6.2,1.75,7.2],[6.2,3.7,7.2],[6.2,3.7,-6],[3.05,3.7,-6],[3.05,1.3,-6]],.04);
+scene.add(finish(g))}
+
+/* ================= Core ================= */
+const app=document.getElementById('app'),mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,mobile?1.5:2));renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;app.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xe8edf0);
+try{const pm=new THREE.PMREMGenerator(renderer);scene.environment=pm.fromScene(new RoomEnvironment(),.04).texture;scene.environmentIntensity=.7}catch(e){console.warn('env',e)}
+scene.add(new THREE.HemisphereLight(0xffffff,0xd0d6dc,1.1));const sun=new THREE.DirectionalLight(0xffffff,.9);sun.position.set(4,10,6);scene.add(sun);
+const camera=new THREE.PerspectiveCamera(70,1,.05,100);scene.add(camera);
+const ret=add(camera,new THREE.RingGeometry(.008,.011,24),B({color:0xffffff,depthTest:false,transparent:true,opacity:.85}),0,0,-1);ret.renderOrder=9;
+
+/* ================= 구성 (Scene Composer) ================= */
+room(scene);utilities(scene);
+const boxes={},block=[];
+EQ.forEach(e=>{const g=e.b(e.id);g.name=e.id;g.position.set(e.x,0,e.z);g.rotation.y=THREE.MathUtils.degToRad(e.ry);scene.add(g);g.updateMatrixWorld(true);
+boxes[e.id]=new THREE.Box3().setFromObject(g);block.push(boxes[e.id].clone().expandByScalar(.35));refresh(e.id);
+const b=boxes[e.id],L=(a,c,w,h)=>{const o=new THREE.Mesh(new THREE.PlaneGeometry(w,h),M.line);o.rotation.x=-Math.PI/2;o.position.set(a,.01,c);scene.add(o)};
+const x0=b.min.x-.15,x1=b.max.x+.15,z0=b.min.z-.15,z1=b.max.z+.15;L((x0+x1)/2,z0,x1-x0,.05);L((x0+x1)/2,z1,x1-x0,.05);L(x0,(z0+z1)/2,.05,z1-z0);L(x1,(z0+z1)/2,.05,z1-z0)});
+
+/* ================= 디지털 트윈 상태 API (센서 데이터 연결 지점) ================= */
+function draw(id){const t=TW[id],e=EQ.find(q=>q.id==id);t.screens.forEach(s=>{const c=s.c.getContext('2d');c.fillStyle='#0b1622';c.fillRect(0,0,256,160);c.fillStyle='#7fd4ff';c.font='bold 20px sans-serif';c.fillText(e.no+' '+e.ko,10,26);c.fillStyle='#'+STATE[t.state][1].toString(16).padStart(6,'0');c.fillText('● '+STATE[t.state][0],10,54);c.fillStyle='#cde';c.font='16px monospace';e.k.slice(1).forEach((k,i)=>c.fillText(k.padEnd(6)+': '+(t.vals[k]??'--'),10,82+i*20));s.t.needsUpdate=true})}
+function refresh(id){const t=TW[id],c=STATE[t.state][1],on={normal:[0,0,1],running:[0,0,1],standby:[0,1,0],warning:[1,1,0],maint:[1,0,0]}[t.state];t.leds.forEach(l=>l.material.color.setHex(c));t.tower.forEach((m,i)=>m.color.setHex([0xff3030,0xffc800,0x30ff60][i]).multiplyScalar(on[i]?1:.18));draw(id);if(focus==id)drawCard()}
+window.digitalTwin={STATE,setStatus(id,state,vals={}){const t=TW[id];if(!t||!STATE[state])return;t.state=state;Object.assign(t.vals,vals);refresh(id)}};
+
+/* ================= 시선 선택 · 하이라이트 · 정보 카드 (PC/VR 공통) ================= */
+const hl=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x00e5ff,depthTest:false}));hl.renderOrder=4;hl.visible=false;scene.add(hl);
+const foot=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:0x00e5ff,transparent:true,opacity:.18,depthWrite:false}));foot.rotation.x=-Math.PI/2;foot.visible=false;scene.add(foot);
+function setHL(b){const{min,max}=b,s=new THREE.Vector3().subVectors(max,min).multiplyScalar(.18),P=[];for(const x of[0,1])for(const y of[0,1])for(const z of[0,1]){const c=new THREE.Vector3(x?max.x:min.x,y?max.y:min.y,z?max.z:min.z);P.push(c.clone(),c.clone().add(new THREE.Vector3(x?-s.x:s.x,0,0)),c.clone(),c.clone().add(new THREE.Vector3(0,y?-s.y:s.y,0)),c.clone(),c.clone().add(new THREE.Vector3(0,0,z?-s.z:s.z)))}hl.geometry.setFromPoints(P);foot.position.set((min.x+max.x)/2,.03,(min.z+max.z)/2);foot.scale.set(max.x-min.x,max.z-min.z,1)}
+const cc=document.createElement('canvas');cc.width=640;cc.height=360;const cT=new THREE.CanvasTexture(cc);cT.colorSpace=THREE.SRGBColorSpace;
+const card=new THREE.Sprite(new THREE.SpriteMaterial({map:cT,depthTest:false,transparent:true}));card.renderOrder=6;card.visible=false;scene.add(card);
+function drawCard(){const e=EQ.find(q=>q.id==focus),t=TW[e.id],c=cc.getContext('2d');c.clearRect(0,0,640,360);c.fillStyle='rgba(8,14,22,.92)';c.fillRect(0,0,640,360);c.strokeStyle='#00e5ff';c.lineWidth=4;c.strokeRect(2,2,636,356);
+c.fillStyle='#fff';c.font='bold 36px sans-serif';c.fillText(e.ko,24,54);c.fillStyle='#8fb4c8';c.font='22px sans-serif';c.fillText(e.en+' · '+e.no,24,88);
+c.fillStyle='#'+STATE[t.state][1].toString(16).padStart(6,'0');c.beginPath();c.arc(36,124,11,0,7);c.fill();c.fillStyle='#fff';c.font='bold 28px sans-serif';c.fillText('STATUS : '+STATE[t.state][0],58,134);
+c.font='24px monospace';c.fillStyle='#d5e6f0';e.k.slice(1).forEach((k,i)=>c.fillText(k.padEnd(6)+': '+(t.vals[k]??'--'),24,176+i*32));
+c.font='20px sans-serif';c.fillStyle='#9fb3c2';c.fillText(e.d.slice(0,26),24,318);c.fillText(e.d.slice(26,52),24,344);cT.needsUpdate=true}
+const ray=new THREE.Ray(),hit=new THREE.Vector3();let ft=0;
+function gaze(dt,t){camera.getWorldPosition(ray.origin);camera.getWorldDirection(ray.direction);let best=null,bd=22;
+EQ.forEach(e=>{if(ray.intersectBox(boxes[e.id],hit)){const d=hit.distanceTo(ray.origin);if(d<bd){bd=d;best=e.id}}});
+if(best!==focus){focus=best;ft=0;hl.visible=foot.visible=!!best;card.visible=false;if(best)setHL(boxes[best])}
+if(focus){ft+=dt;const b=boxes[focus];if(ft>.25&&!card.visible){drawCard();card.visible=true}
+if(card.visible){b.getCenter(hit);const d=camera.position.distanceTo(hit),h=THREE.MathUtils.clamp(d*.16,.9,2);card.scale.set(h*1.78,h,1);card.position.set(hit.x,Math.min(b.max.y+.9,ROOM.h-.9),hit.z)}}
+foot.material.opacity=.15+.08*Math.sin(t*4)}
+
+/* ================= 플레이어 (PC 이동/시점 + 충돌) ================= */
+const player={pos:new THREE.Vector3(0,EYE,0),yaw:0,pitch:0},keys={};let drag=false,lx=0,ly=0,walk=false,lastTap=0,demo=0,demoT=0;
+function move(dx,dz){const p=player.pos;for(const[ax,az]of[[dx,0],[0,dz]]){const nx=p.x+ax,nz=p.z+az;if(Math.abs(nx)<ROOM.w/2-.6&&Math.abs(nz)<ROOM.d/2-.6&&!block.some(b=>nx>b.min.x&&nx<b.max.x&&nz>b.min.z&&nz<b.max.z)){p.x=nx;p.z=nz}}}
+function goTo(i){if(!i){player.pos.set(0,EYE,0);player.yaw=0;return}const e=EQ[i-1];if(!e)return;const r=THREE.MathUtils.degToRad(e.ry);player.pos.set(e.x+Math.sin(r)*3.8,EYE,e.z+Math.cos(r)*3.8);player.yaw=r;player.pitch=0}
+addEventListener('keydown',e=>{keys[e.code]=1;if(e.code=='KeyT')demo=!demo;if(/Digit\d/.test(e.code))goTo(+e.code.slice(5))});addEventListener('keyup',e=>keys[e.code]=0);
+const cv=renderer.domElement;cv.addEventListener('pointerdown',e=>{if(vr.on){walk=true;const n=performance.now();if(n-lastTap<350)vr.need=true;lastTap=n}else{drag=true;lx=e.clientX;ly=e.clientY}});
+addEventListener('pointerup',()=>walk=drag=false);addEventListener('pointermove',e=>{if(!drag||vr.on)return;player.yaw-=(e.clientX-lx)*.005;player.pitch=THREE.MathUtils.clamp(player.pitch-(e.clientY-ly)*.005,-1.3,1.3);lx=e.clientX;ly=e.clientY});
+
+/* ================= VR (Cardboard) : 좌/우 분할 + 자이로 + 가로 보정 ================= */
+const vr={on:false,fl:false,need:true,dev:new THREE.Quaternion(),off:new THREE.Quaternion()},DG=Math.PI/180,Q1=new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5)),AZ=new THREE.Vector3(0,0,1),AY=new THREE.Vector3(0,1,0);
+function devQ(e){if(e.alpha==null)return;const o=(screen.orientation?screen.orientation.angle:window.orientation||0)*DG;vr.dev.setFromEuler(new THREE.Euler(e.beta*DG,e.alpha*DG,-e.gamma*DG,'YXZ')).multiply(Q1).multiply(new THREE.Quaternion().setFromAxisAngle(AZ,-o));
+if(vr.need){vr.need=false;vr.off.setFromAxisAngle(AY,-new THREE.Euler().setFromQuaternion(vr.dev,'YXZ').y)}}
+const size=()=>vr.fl?[innerHeight,innerWidth]:[innerWidth,innerHeight];
+function resize(){const[w,h]=size();renderer.setSize(w,h);camera.aspect=(vr.on?w/2:w)/h;camera.updateProjectionMatrix()}
+function fit(){vr.fl=vr.on&&innerWidth<innerHeight;document.body.classList.toggle('fl',vr.fl);resize()}
+async function setVR(on){vr.on=on;document.body.classList.toggle('vr',on);if(on){vr.need=true;const D=window.DeviceOrientationEvent;if(D&&D.requestPermission){try{if(await D.requestPermission()=='granted')addEventListener('deviceorientation',devQ)}catch(e){}}else addEventListener('deviceorientation',devQ);
+document.documentElement.requestFullscreen?.().catch(()=>{});screen.orientation?.lock?.('landscape').catch(()=>{});addEventListener('orientationchange',fit)}else{document.exitFullscreen?.().catch(()=>{});removeEventListener('orientationchange',fit)}fit()}
+document.getElementById('vr').onclick=()=>setVR(true);document.getElementById('exit').onclick=()=>setVR(false);addEventListener('resize',fit);
+function eye(o,x,w,h){const p=camera.position.clone();camera.position.add(new THREE.Vector3(o,0,0).applyQuaternion(camera.quaternion));renderer.setViewport(x,0,w,h);renderer.setScissor(x,0,w,h);renderer.render(scene,camera);camera.position.copy(p)}
+
+/* ================= 루프 ================= */
+const clock=new THREE.Clock(),fw=new THREE.Vector3(),rt=new THREE.Vector3(),ORDER=['normal','running','standby','warning','maint'];
+fit();renderer.setAnimationLoop(()=>{const dt=Math.min(clock.getDelta(),.1),t=clock.elapsedTime;
+if(vr.on)camera.quaternion.copy(vr.off).multiply(vr.dev);else camera.rotation.set(player.pitch,player.yaw,0,'YXZ');
+camera.getWorldDirection(fw);fw.y=0;fw.normalize();rt.set(-fw.z,0,fw.x);
+const f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)+(walk?1:0),s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0),sp=(keys.ShiftLeft?3.2:1.6)*dt;
+if(f||s)move((fw.x*f+rt.x*s)*sp,(fw.z*f+rt.z*s)*sp);camera.position.copy(player.pos);
+if(demo&&t-demoT>2.5){demoT=t;EQ.forEach((e,i)=>digitalTwin.setStatus(e.id,ORDER[(Math.floor(t/2.5)+i)%5]))}
+EQ.forEach(e=>{const w=TW[e.id];w.anim&&w.anim(t,w.state=='running');w.leds.forEach(l=>l.visible=w.state!='running'||Math.floor(t*3)%2==0)});
+gaze(dt,t);
+if(vr.on){const[w,h]=size();renderer.setScissorTest(true);eye(-.032,0,w/2,h);eye(.032,w/2,w/2,h)}else{renderer.setScissorTest(false);const[w,h]=size();renderer.setViewport(0,0,w,h);renderer.render(scene,camera)}});
+</script></body></html>
