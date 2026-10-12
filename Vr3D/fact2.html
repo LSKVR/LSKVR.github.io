@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>반도체 산화(Oxidation) 공정 3D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#dfe7f3;--panel:rgba(255,255,255,.86);--tx:#0f172a;--mut:#475569;--ac:#0369a1;--bd:rgba(71,85,105,.3);--hot:#c2410c;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1220;--panel:rgba(15,23,42,.84);--tx:#e5eaf3;--mut:#9aa8bf;--ac:#38bdf8;--bd:rgba(148,163,184,.3);--hot:#fb923c}}
+:root[data-theme="dark"]{--bg:#0b1220;--panel:rgba(15,23,42,.84);--tx:#e5eaf3;--mut:#9aa8bf;--ac:#38bdf8;--bd:rgba(148,163,184,.3);--hot:#fb923c}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--tx);font:14px/1.45 "Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+#c{position:fixed;inset:0}#c canvas{display:block;touch-action:none;cursor:grab}
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;white-space:nowrap;padding:3px 8px;border-radius:6px;background:var(--panel);border:1px solid var(--bd);font-size:12px;display:none}
+.lbl b{display:block;font-weight:700}.lbl small{display:block;color:var(--mut);font-size:10.5px}
+.lbl::after{content:"";position:absolute;left:50%;width:1px;height:12px;background:var(--ac)}
+.lbl.up::after{top:100%}.lbl.dn::after{bottom:100%}
+.p{position:fixed;background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;backdrop-filter:blur(6px)}
+.col{position:fixed;left:12px;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:8px;width:min(300px,calc(100vw - 24px))}
+.col .p{position:static}
+h1{font-size:16px;margin:0 0 2px}.sub{color:var(--mut);font-size:12px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:2px 0}.row span:first-child{color:var(--mut)}
+.row b{font-variant-numeric:tabular-nums}.hot{color:var(--hot)}.ox{color:var(--ac)}
+.eq{margin-top:6px;padding-top:6px;border-top:1px solid var(--bd);font-size:13px}
+.st{right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);width:220px}
+.st ol{margin:0;padding:0;list-style:none}.st li{padding:5px 8px;border-radius:6px;color:var(--mut);border-left:3px solid transparent}
+.st li.on{color:var(--tx);background:color-mix(in srgb,var(--ac) 16%,transparent);border-left-color:var(--ac);font-weight:700}
+.st li.done{color:var(--tx)}.st small{display:block;font-weight:400;color:var(--mut);font-size:11px}
+.bar{left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px)}
+button,select{font:inherit;font-size:13px;color:var(--tx);background:transparent;border:1px solid var(--bd);border-radius:7px;padding:6px 11px;cursor:pointer}
+button:hover,select:hover{border-color:var(--ac)}button:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+button.main{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:700}
+select option{color:#000}
+.note{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 70px);color:var(--mut);font-size:11px;text-align:right;max-width:240px}
+@media (max-width:760px){.st,.note{display:none}.col{width:calc(100vw - 24px)}.row{font-size:12px}}
+</style>
+</head>
+<body>
+<div id="c"></div><div id="labels"></div>
+<div class="col">
+ <div class="p"><h1>반도체 8대 공정 ② 산화 (Oxidation)</h1><div class="sub">수평형 확산로에서의 열산화 Si → SiO₂</div></div>
+ <div class="p" id="dt">
+  <div class="row"><span>단계</span><b id="vStage">대기</b></div>
+  <div class="row"><span>노 온도</span><b class="hot" id="vTemp">25 °C</b></div>
+  <div class="row"><span>산화 시간</span><b id="vTime">0h 00m</b></div>
+  <div class="row"><span>산화막(SiO₂) 두께</span><b class="ox" id="vOx">0 nm</b></div>
+  <div class="row"><span>소모된 Si (≈44%)</span><b id="vSi">0 nm</b></div>
+  <div class="eq" id="vEq"></div>
+ </div>
+</div>
+<div class="p st"><ol id="stg"></ol></div>
+<div class="p bar">
+ <button class="main" id="bGo">▶ 공정 시작</button><button id="bRst">↺ 리셋</button>
+ <select id="sMode" aria-label="산화 방식"><option value="dry">건식 산화 (O₂)</option><option value="wet">습식 산화 (H₂O)</option></select>
+ <button id="bLab">라벨 ON</button><button id="vAll">전체</button><button id="vIn">노 내부</button><button id="vXs">단면 비교</button>
+</div>
+<div class="note">좌클릭 드래그: 회전 · 휠/핀치: 확대·축소 · 우클릭/Shift 드래그: 이동<br>산화막 두께는 시각화를 위해 과장되어 있습니다.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),lerp=(a,b,t)=>a+(b-a)*t,ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+
+/* ---------- 기본 장면 ---------- */
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+$('c').appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(45,1,.1,300);
+function setBg(){scene.background=new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#0b1220')}
+setBg();matchMedia('(prefers-color-scheme: dark)').addEventListener('change',setBg);
+scene.add(new THREE.AmbientLight(0xffffff,.6));
+const sun=new THREE.DirectionalLight(0xffffff,.9);sun.position.set(8,16,12);scene.add(sun);
+const back=new THREE.DirectionalLight(0x88aaff,.35);back.position.set(-10,6,-10);scene.add(back);
+const plight=new THREE.PointLight(0xff7a2a,0,12);scene.add(plight);
+
+const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.5,metalness:.1},o));
+const steel=M(0x94a3b8,{metalness:.7,roughness:.35}),dark=M(0x334155,{metalness:.5});
+const glass=M(0x9fe3ff,{transparent:true,opacity:.2,roughness:.1,side:THREE.DoubleSide,depthWrite:false});
+const cylX=(r,l,mat,seg=48,open=false)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,l,seg,1,open),mat);m.rotation.z=Math.PI/2;return m};
+const box=(w,h,d,mat,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);scene.add(m);return m};
+const add=(m,x,y,z)=>{m.position.set(x,y,z);scene.add(m);return m};
+
+/* ---------- 산화로 ---------- */
+box(16,1.6,5,M(0x475569),0,-3,0);                                   // 하부 캐비닛
+add(cylX(2.3,12.4,M(0x64748b,{transparent:true,opacity:.3,side:THREE.DoubleSide,depthWrite:false,metalness:.6}),64,true),0,0,0); // 단열 외피
+add(cylX(1.55,14,glass,48,true),0,0,0);                              // 석영 튜브
+[-6.4,6.4].forEach(x=>{const t=new THREE.Mesh(new THREE.TorusGeometry(2.35,.14,12,48),steel);t.rotation.y=Math.PI/2;add(t,x,0,0)});
+add(cylX(1.6,.25,steel),7.1,0,0);                                    // 후단 캡
+add(cylX(.25,1.6,steel,24),7.9,0,0);add(new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,2.4,24),steel),8.6,-1.2,0); // 배기구
+add(new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,2,20),steel),-6.7,2.55,0);                                   // 가스 주입구
+add(cylX(.16,2.2,steel,20),-5.6,3.55,0);add(new THREE.Mesh(new THREE.SphereGeometry(.28,16,12),M(0xef4444)),-4.5,3.55,0);
+add(cylX(.05,10,M(0xca8a04,{metalness:.8})),0,1.15,0);                // 열전대
+const coilMat=M(0x9a3412,{emissive:0xff5a00,emissiveIntensity:0,metalness:.4});
+const coilG=new THREE.TorusGeometry(1.95,.07,8,48);
+for(let x=-5.4;x<=5.41;x+=.45){const c=new THREE.Mesh(coilG,coilMat);c.rotation.y=Math.PI/2;add(c,x,0,0)} // 히터 코일
+const door=new THREE.Group();door.add(cylX(1.9,.4,steel,48));{const hd=new THREE.Mesh(new THREE.BoxGeometry(.2,.3,1.2),dark);hd.position.set(-.3,0,0);door.add(hd)}
+scene.add(door);door.position.set(-7.3,0,0);
+box(14,.3,2,M(0x64748b),-15,-1.8,0);box(.4,.4,1.6,dark,-9,-2.0,0);box(.4,.4,1.6,dark,-21,-2.0,0);   // 로딩 스테이션
+
+/* ---------- 웨이퍼 보트 ---------- */
+const boat=new THREE.Group();boat.position.y=-.25;scene.add(boat);
+const quartz=M(0xdbeafe,{transparent:true,opacity:.7,roughness:.2});
+[-58,-22,22,58].forEach(a=>{const r=a*Math.PI/180,m=cylX(.05,5,quartz,10);m.position.set(0,-Math.cos(r)*1.04,Math.sin(r)*1.04);boat.add(m)});
+const bp=new THREE.Mesh(new THREE.BoxGeometry(5.1,.08,1.2),quartz);bp.position.y=-1.05;boat.add(bp);
+[-2.5,2.5].forEach(x=>{const m=new THREE.Mesh(new THREE.BoxGeometry(.08,.5,1.4),quartz);m.position.set(x,-.8,0);boat.add(m)});
+const waferMat=M(0x9aa5b1,{metalness:.8,roughness:.25,emissive:0x000000});
+const wGeo=new THREE.CylinderGeometry(1,1,.05,56);
+for(let i=0;i<13;i++){const w=new THREE.Mesh(wGeo,waferMat);w.rotation.z=Math.PI/2;w.position.x=(i-6)*.34;boat.add(w)}
+const paddle=add(new THREE.Mesh(new THREE.BoxGeometry(8,.1,.5),M(0xe2e8f0,{transparent:true,opacity:.85})),-20,-1.39,0);
+
+/* ---------- 가스 입자 ---------- */
+const NG=260,gp=new Float32Array(NG*3);
+const rg=(i,init)=>{gp[i*3]=init?-6.5+Math.random()*13:-6.6;const a=Math.random()*6.28,r=Math.sqrt(Math.random())*1.35;gp[i*3+1]=Math.cos(a)*r;gp[i*3+2]=Math.sin(a)*r};
+for(let i=0;i<NG;i++)rg(i,true);
+const gGeo=new THREE.BufferGeometry();gGeo.setAttribute('position',new THREE.BufferAttribute(gp,3));
+const gMat=new THREE.PointsMaterial({size:.14,color:0xff6b6b,transparent:true,opacity:0,depthWrite:false});
+scene.add(new THREE.Points(gGeo,gMat));
+
+/* ---------- 단면 비교 (산화 전 / 후) ---------- */
+const XS_Y=6,SW=4.4,SD=2.4,SH=1.6;
+function slab(x){
+ const g=new THREE.Group();g.position.set(x,XS_Y,0);scene.add(g);
+ const mk=(mat)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(SW,1,SD),mat);m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.5})));g.add(m);return m};
+ const si=mk(M(0x64748b,{transparent:true,opacity:.8})),ox=mk(M(0x38bdf8,{transparent:true,opacity:.65,emissive:0x0ea5e9,emissiveIntensity:.3}));
+ const am=new THREE.InstancedMesh(new THREE.SphereGeometry(.07,8,6),M(0xe2e8f0),250),mt=new THREE.Matrix4();let k=0;
+ for(let i=0;i<10;i++)for(let j=0;j<5;j++)for(let l=0;l<5;l++){mt.setPosition(-1.98+i*.44+(l%2)*.22,-.85-l*.18,-.9+j*.45);am.setMatrixAt(k++,mt)}
+ g.add(am);return {g,si,ox};
+}
+const before=slab(-3.2),after=slab(3.2);
+function setSlab(s,siTop,oxTop){
+ s.si.scale.y=siTop+SH;s.si.position.y=(siTop-SH)/2;
+ const h=Math.max(oxTop-siTop,.001);s.ox.scale.y=h;s.ox.position.y=(siTop+oxTop)/2;s.ox.visible=oxTop-siTop>.003;
+}
+const ref=new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(-2.3,0,1.25),V(2.3,0,1.25),V(2.3,0,-1.25),V(-2.3,0,-1.25),V(-2.3,0,1.25)]),new THREE.LineDashedMaterial({color:0xfacc15,dashSize:.15,gapSize:.1}));
+ref.computeLineDistances();after.g.add(ref);
+const NO=70,op=new Float32Array(NO*3);
+const roa=i=>{op[i*3]=(Math.random()-.5)*4;op[i*3+1]=Math.random()*1.4;op[i*3+2]=(Math.random()-.5)*2.1};
+for(let i=0;i<NO;i++)roa(i);
+const oGeo=new THREE.BufferGeometry();oGeo.setAttribute('position',new THREE.BufferAttribute(op,3));
+const oMat=new THREE.PointsMaterial({size:.17,color:0xff5d5d,transparent:true,opacity:.95,depthWrite:false});
+const oPts=new THREE.Points(oGeo,oMat);oPts.visible=false;after.g.add(oPts);
+// 웨이퍼 표면과 단면을 잇는 확대선
+const linkG=new THREE.BufferGeometry();linkG.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));
+scene.add(new THREE.Line(linkG,new THREE.LineBasicMaterial({color:0xfacc15,transparent:true,opacity:.7})));
+const mark=add(new THREE.Mesh(new THREE.SphereGeometry(.09,12,10),new THREE.MeshBasicMaterial({color:0xfacc15})),0,0,0);
+
+/* ---------- 컨트롤러 화면 ---------- */
+const cv=document.createElement('canvas');cv.width=256;cv.height=128;const cx=cv.getContext('2d'),tex=new THREE.CanvasTexture(cv);
+add(new THREE.Mesh(new THREE.PlaneGeometry(3.2,1.2),new THREE.MeshBasicMaterial({map:tex})),-3,-3,2.52);
+let lastScr='';
+function screen(){const s=Math.round(temp)+'|'+Math.round(gas*100)+'|'+mode;if(s===lastScr)return;lastScr=s;
+ cx.fillStyle='#04120a';cx.fillRect(0,0,256,128);cx.fillStyle='#4ade80';cx.font='bold 20px monospace';
+ cx.fillText('SET 1000 C',12,28);cx.fillText('PV  '+String(Math.round(temp)).padStart(4,' ')+' C',12,58);
+ cx.fillText((mode==='dry'?'O2 ':'H2O')+' FLOW '+Math.round(gas*100)+'%',12,88);cx.fillText(gt>=END?'DONE':run?'RUN':'IDLE',12,116);tex.needsUpdate=true}
+
+/* ---------- 마우스 카메라 (회전·확대/축소·이동) ---------- */
+const T=V(-1.5,1.5,0),sph={r:36,th:.55,ph:1.2};let goal=null;
+function cam(){camera.position.set(T.x+sph.r*Math.sin(sph.ph)*Math.sin(sph.th),T.y+sph.r*Math.cos(sph.ph),T.z+sph.r*Math.sin(sph.ph)*Math.cos(sph.th));camera.lookAt(T)}
+const el=renderer.domElement,ptr=new Map();let pd=1;
+const pinch=()=>{const a=[...ptr.values()];return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1};
+el.addEventListener('pointerdown',e=>{el.setPointerCapture(e.pointerId);ptr.set(e.pointerId,{x:e.clientX,y:e.clientY,pan:e.button===2||e.shiftKey});if(ptr.size===2)pd=pinch();goal=null;el.style.cursor='grabbing'});
+el.addEventListener('pointermove',e=>{const p=ptr.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+ if(ptr.size===2){const d=pinch();sph.r=clamp(sph.r*pd/d,5,90);pd=d}
+ else if(p.pan){camera.updateMatrixWorld();const k=sph.r*.0014;T.addScaledVector(V(0,0,0).setFromMatrixColumn(camera.matrixWorld,0),-dx*k).addScaledVector(V(0,0,0).setFromMatrixColumn(camera.matrixWorld,1),dy*k)}
+ else{sph.th-=dx*.006;sph.ph=clamp(sph.ph-dy*.006,.05,Math.PI-.05)}});
+const up=e=>{ptr.delete(e.pointerId);el.style.cursor='grab'};el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+el.addEventListener('wheel',e=>{e.preventDefault();sph.r=clamp(sph.r*Math.exp(e.deltaY*.001),5,90);goal=null},{passive:false});
+el.addEventListener('contextmenu',e=>e.preventDefault());
+const PRE={all:{T:V(-1.5,1.5,0),r:36,th:.55,ph:1.2},in:{T:V(0,0,0),r:14,th:.5,ph:1.25},xs:{T:V(0,5.3,0),r:15,th:.15,ph:1.4}};
+['all','in','xs'].forEach(k=>$(({all:'vAll',in:'vIn',xs:'vXs'})[k]).onclick=()=>goal=PRE[k]);
+
+/* ---------- 라벨 ---------- */
+const labs=[];let showLab=true;
+function L(ko,en,pos,below,txt){const e=document.createElement('div');e.className='lbl '+(below?'dn':'up');$('labels').appendChild(e);
+ labs.push({e,pos:typeof pos==='function'?pos:()=>pos,below,txt,last:''});if(!txt)e.innerHTML=`<b>${ko}</b><small>${en}</small>`}
+L('석영 튜브','Quartz Process Tube',V(6.7,1.55,0));
+L('히터 코일','Heating Elements',V(-2.5,1.95,0));
+L('단열 외피','Insulation Shell',V(4.2,2.3,0));
+L('열전대','Thermocouple',V(2,1.15,0));
+L('웨이퍼 보트','Quartz Wafer Boat',()=>V(boat.position.x-1.2,-1.3,1),true);
+L('실리콘 웨이퍼','Si Wafer',()=>V(boat.position.x+.9,.75,0));
+L('캔틸레버 패들','Loading Paddle',()=>V(paddle.position.x-2,-1.4,0),true);
+L('가스 주입구','O₂ / H₂O Inlet',V(-4.5,3.8,0));
+L('배기구','Exhaust',V(8.6,-1.3,0));
+L('로딩 도어','Door / End Cap',()=>V(-7.3,door.position.y+1.9,0));
+L('온도 컨트롤러','Temperature Controller',V(-3,-3.6,2.55),true);
+L('로딩 스테이션','Loading Station',V(-15,-1.65,.9),true);
+L('산화 전','Before · Bare Si',V(-3.2,XS_Y+.1,0));
+L('실리콘 기판','Si Substrate',V(-3.2,XS_Y-1.3,1.2),true);
+L('','',()=>V(3.2,XS_Y+Math.max(oxTop,.4)+.9,0),false,()=>`<b>산화 후</b><small>After · SiO₂ 성장</small>`);
+L('','',()=>V(5.4,XS_Y+(siTop+oxTop)/2,1.2),false,()=>`<b class="ox">SiO₂ ${nm.toFixed(0)} nm</b><small>산화막</small>`);
+L('','',()=>V(1.0,XS_Y+siTop-.35,1.2),true,()=>`<b>소모된 Si ${(nm*.44).toFixed(0)} nm</b><small>Si consumed</small>`);
+L('원래 Si 표면','Original surface (기준선)',V(1.2,XS_Y,-1.25));
+function updLabels(){const w=innerWidth,h=innerHeight;
+ for(const l of labs){const v=l.pos().clone().project(camera);
+  if(!showLab||v.z>1){l.e.style.display='none';continue}
+  l.e.style.display='block';
+  if(l.txt){const t=l.txt();if(t!==l.last){l.e.innerHTML=t;l.last=t}}
+  l.e.style.transform=`translate(${((v.x*.5+.5)*w).toFixed(1)}px,${((-v.y*.5+.5)*h).toFixed(1)}px) translate(-50%,${l.below?'12px':'calc(-100% - 12px)'})`}}
+
+/* ---------- 공정 상태 (Deal-Grove 산화 모델) ---------- */
+const PAR={dry:{A:.165,B:.0117,eq:'Si + O₂ → SiO₂',c:0xff6b6b},wet:{A:.226,B:.287,eq:'Si + 2H₂O → SiO₂ + 2H₂',c:0x67e8f9}};
+const STG=[['웨이퍼 투입','Loading · 도어 개방, 보트 삽입'],['승온 · 가스 주입','Ramp-up · 1000 °C, O₂/H₂O'],['산화막 성장','Oxidation · Si + O₂ → SiO₂'],['공정 완료','Done · 인출 준비']];
+$('stg').innerHTML=STG.map(s=>`<li>${s[0]}<small>${s[1]}</small></li>`).join('');
+const END=32;let gt=0,run=false,paused=false,mode='dry',temp=25,gas=0,hrs=0,nm=0,siTop=0,oxTop=0.0005;
+const baseC=new THREE.Color(0x9aa5b1),tmpC=new THREE.Color();
+function apply(){
+ const g=gt;
+ const dOpen=g<1.2?ease(g/1.2):g<6.8?1:g<8?1-ease((g-6.8)/1.2):0;
+ door.position.y=4.4*dOpen;
+ boat.position.x=g<1.2?-13:g<5.2?lerp(-13,0,ease((g-1.2)/4)):0;
+ paddle.position.x=boat.position.x-6.55+(g<5.2?0:-14*ease((g-5.2)/1.6));
+ temp=g<8?25:g<14?25+975*ease((g-8)/6):1000;
+ gas=clamp((g-11)/3,0,1);
+ hrs=g>14?Math.min((g-14)/18,1)*3:0;
+ const P=PAR[mode];nm=1000*P.A/2*(Math.sqrt(1+4*P.B*hrs/(P.A*P.A))-1);
+ const vis=nm/900*1.6;siTop=-.44*vis;oxTop=.56*vis;
+ setSlab(before,0,0);setSlab(after,siTop,oxTop);
+ const heat=Math.pow(clamp((temp-400)/600,0,1),2);
+ coilMat.emissiveIntensity=heat*1.6;plight.intensity=heat*1.4;
+ tmpC.setHSL(((.62+nm/260)%1+1)%1,.6,.45);waferMat.color.copy(baseC).lerp(tmpC,Math.min(nm/25,1));
+ waferMat.emissive.setRGB(1,.25,.05).multiplyScalar(.45*heat);
+ gMat.opacity=gas*.9;gMat.color.setHex(P.c);oMat.color.setHex(P.c);oPts.visible=hrs>0;
+ const wx=boat.position.x+.68;
+ mark.position.set(wx,.75,0);const a=linkG.attributes.position;a.setXYZ(0,wx,.75,0);a.setXYZ(1,3.2,XS_Y-SH,0);a.needsUpdate=true;
+ // HUD
+ const idx=!run&&g===0?-1:g<8?0:g<14?1:g<END?2:3;
+ [...$('stg').children].forEach((li,i)=>li.className=i===idx?'on':i<idx?'done':'');
+ $('vStage').textContent=idx<0?'대기':STG[idx][0];
+ $('vTemp').textContent=Math.round(temp)+' °C';
+ $('vTime').textContent=Math.floor(hrs+1e-9)+'h '+String(Math.round((hrs%1)*60)%60).padStart(2,'0')+'m';
+ $('vOx').textContent=nm.toFixed(0)+' nm';$('vSi').textContent=(nm*.44).toFixed(0)+' nm';
+ $('vEq').textContent=P.eq+'  ('+(mode==='dry'?'건식 · 치밀한 박막, 게이트 산화막':'습식 · 빠른 성장, 두꺼운 필드 산화막')+')';
+ $('bGo').textContent=gt>=END?'↺ 다시 시작':!run?'▶ 공정 시작':paused?'▶ 계속':'⏸ 일시정지';
+ screen();
+}
+$('bGo').onclick=()=>{if(gt>=END){gt=0;run=true;paused=false}else if(!run){run=true;paused=false}else paused=!paused};
+const reset=()=>{gt=0;run=false;paused=false;lastScr='';apply()};
+$('bRst').onclick=reset;$('sMode').onchange=e=>{mode=e.target.value;reset()};
+$('bLab').onclick=()=>{showLab=!showLab;$('bLab').textContent='라벨 '+(showLab?'ON':'OFF')};
+
+/* ---------- 루프 ---------- */
+function particles(dt){
+ if(gas>.02){const sp=dt*(1.2+gas*1.6),gpa=gGeo.attributes.position;for(let i=0;i<NG;i++){gp[i*3]+=sp;if(gp[i*3]>6.8)rg(i,false)}gpa.needsUpdate=true}
+ if(oPts.visible){const opa=oGeo.attributes.position;for(let i=0;i<NO;i++){op[i*3+1]-=dt*.6;if(op[i*3+1]<siTop)op[i*3+1]=oxTop+.4+Math.random()*.9}opa.needsUpdate=true}
+}
+function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+let last=performance.now();
+function loop(now){requestAnimationFrame(loop);const dt=Math.min((now-last)/1000,.05);last=now;
+ if(run&&!paused)gt=Math.min(gt+dt,END);
+ apply();particles(dt);
+ if(goal){T.lerp(goal.T,.08);sph.r=lerp(sph.r,goal.r,.08);sph.th=lerp(sph.th,goal.th,.08);sph.ph=lerp(sph.ph,goal.ph,.08)}
+ cam();updLabels();renderer.render(scene,camera)}
+apply();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
