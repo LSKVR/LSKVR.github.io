@@ -9,16 +9,16 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;font-f
 button{position:fixed;z-index:20;padding:12px 18px;background:rgba(0,0,0,.65);color:#fff;border:2px solid #fff;border-radius:10px;font-size:15px}
 #vr{right:16px;bottom:22px}#exit{right:16px;top:12px;display:none}
 body.vr #hud,body.vr #vr{display:none}body.vr #exit{display:block}
-body.fl #app{position:absolute;top:0;left:100%;width:100vh;height:100vw;transform-origin:0 0;transform:rotate(90deg)}
-body.fl #exit{transform:none}
+/* VR 모드 시 화면 회전 강제 적용 제거 및 올바른 뷰포트 크기 매칭 */
+#fade{position:fixed;inset:0;z-index:50;background:#0f2a44;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0;pointer-events:none;transition:opacity .7s}#fade.on{opacity:1}
 #err{display:none;position:fixed;inset:0;z-index:99;background:rgba(20,0,0,.92);color:#f88;font:13px monospace;white-space:pre-wrap;padding:20px;overflow:auto}
 </style>
 <script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head><body>
 <div id="app"></div>
-<div id="hud"><b>Process 01 · 웨이퍼 투입 / 산화 공정실</b><br>WASD 이동 · Shift 달리기 · 드래그 시점<br>장비를 바라보면 하이라이트 + 상태 표시<br>1~9 장비 앞으로 이동 · 0 중앙 · T 상태 LED 테스트</div>
-<button id="vr">🥽 VR (Cardboard)</button><button id="exit">✕ VR 종료</button><div id="err"></div>
+<div id="hud"><b>Process 01 · 웨이퍼 투입 / 산화 공정실</b><br>WASD 이동 · Shift 달리기 · 드래그 시점<br>장비를 바라보면 하이라이트 + 상태 표시<br>1~9 장비 앞으로 이동 · 0 중앙 · T 상태 LED 테스트<br>N 2공정 문 앞으로 · 북쪽 벽 오른쪽 문으로 들어가면 2공정(산화)</div>
+<button id="vr">🥽 VR (Cardboard)</button><button id="exit">✕ VR 종료</button><div id="fade">PROCESS 02 · 산화 공정으로 이동 중…</div><div id="err"></div>
 <script>
 const se=m=>{const e=document.getElementById('err');e.style.display='block';e.textContent+=m+'\n\n'};
 addEventListener('error',e=>se(e.target&&e.target.src?'[로드 실패] '+e.target.src:'[오류] '+e.message+(e.filename?'\n'+e.filename+':'+e.lineno:'')),true);
@@ -193,6 +193,22 @@ pipe(g,M.gray,[[1.3,4.1,-7.1],[3.3,4.1,-7.1],[3.3,4.1,7.5],[.6,4.1,7.5],[.6,3.5,
 pipe(g,M.blue,[[6,1.75,7.2],[6,3.8,7.2],[6,3.8,-6.4],[2.9,3.8,-6.4],[2.9,1.3,-6.4]],.04);pipe(g,M.lblue,[[6.2,1.75,7.2],[6.2,3.7,7.2],[6.2,3.7,-6],[3.05,3.7,-6],[3.05,1.3,-6]],.04);
 scene.add(finish(g))}
 
+/* ================= 2공정 이동 문 (북쪽 벽 오른쪽) : 걸어 들어가면 NEXT_URL 로 이동 ================= */
+const NEXT_URL='process02.html',DOOR={x:7.2,w:2.0,h:2.5};
+function nextDoor(scene){const g=new THREE.Group();g.name='DoorToProcess02';g.position.set(DOOR.x,0,-ROOM.d/2);scene.add(g);const{w,h}=DOOR,leaves=[];
+add(g,new THREE.PlaneGeometry(w,h),B({map:tx(256,256,(c,W,H)=>{const q=c.createLinearGradient(0,0,0,H);q.addColorStop(0,'#cfeaff');q.addColorStop(1,'#4aa3e0');c.fillStyle=q;c.fillRect(0,0,W,H);c.fillStyle='#0f2a44';c.font='bold 38px sans-serif';c.textAlign='center';c.fillText('PROCESS 02',W/2,H/2-6);c.fillText('OXIDATION',W/2,H/2+44)})}),0,h/2,.02);
+[-1,1].forEach(a=>box(g,M.steel,.12,h+.12,.14,a*(w/2+.06),(h+.12)/2,.07));box(g,M.steel,w+.3,.14,.14,0,h+.05,.07);
+add(g,new THREE.PlaneGeometry(w+.3,.05),B({color:0x00ff9d}),0,h+.16,.15);
+plate(g,'PROCESS 02 · 산화 공정  →',2.4,.3,0,h+.45,.03,0,'#0f2a44','#fff');
+[-1,1].forEach(a=>{const L=new THREE.Group();L.position.set(a*w/4,h/2,.15);g.add(L);
+box(L,M.smoke,w/2-.03,h-.06,.02,0,0,0);box(L,M.alu,w/2-.03,.06,.04,0,h/2-.04,0);box(L,M.alu,w/2-.03,.06,.04,0,-h/2+.04,0);box(L,M.alu,.05,h-.06,.04,a*(w/4-.04),0,0);box(L,M.alu,.05,h-.06,.04,-a*(w/4-.04),0,0);box(L,M.steel,.03,.5,.04,-a*(w/4-.12),0,.03);leaves.push({L,a})});
+const ar=add(g,new THREE.PlaneGeometry(1,1.4),B({transparent:true,map:tx(128,180,c=>{c.fillStyle='rgba(30,160,80,.92)';c.beginPath();c.moveTo(64,6);c.lineTo(122,80);c.lineTo(84,80);c.lineTo(84,174);c.lineTo(44,174);c.lineTo(44,80);c.lineTo(6,80);c.fill()})}),0,.013,1.5);ar.rotation.x=-Math.PI/2;
+return{g,leaves}}
+let doorOpen=0,going=false;const fade=document.getElementById('fade');
+function doorTick(dt){const p=player.pos,d=Math.hypot(p.x-DOOR.x,p.z+ROOM.d/2);doorOpen+=((d<4.2?1:0)-doorOpen)*Math.min(1,dt*3);
+ND.leaves.forEach(l=>l.L.position.x=l.a*(DOOR.w/4+doorOpen*DOOR.w/2));
+if(!going&&doorOpen>.8&&Math.abs(p.x-DOOR.x)<DOOR.w/2-.1&&p.z<-ROOM.d/2+1.3){going=true;fade.classList.add('on');setTimeout(()=>{location.href=NEXT_URL},750)}}
+
 /* ================= Core ================= */
 const app=document.getElementById('app'),mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,mobile?1.5:2));renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;app.appendChild(renderer.domElement);
@@ -203,7 +219,7 @@ const camera=new THREE.PerspectiveCamera(70,1,.05,100);scene.add(camera);
 const ret=add(camera,new THREE.RingGeometry(.008,.011,24),B({color:0xffffff,depthTest:false,transparent:true,opacity:.85}),0,0,-1);ret.renderOrder=9;
 
 /* ================= 구성 (Scene Composer) ================= */
-room(scene);utilities(scene);
+room(scene);utilities(scene);const ND=nextDoor(scene);
 const boxes={},block=[];
 EQ.forEach(e=>{const g=e.b(e.id);g.name=e.id;g.position.set(e.x,0,e.z);g.rotation.y=THREE.MathUtils.degToRad(e.ry);scene.add(g);g.updateMatrixWorld(true);
 boxes[e.id]=new THREE.Box3().setFromObject(g);block.push(boxes[e.id].clone().expandByScalar(.35));refresh(e.id);
@@ -238,16 +254,17 @@ foot.material.opacity=.15+.08*Math.sin(t*4)}
 const player={pos:new THREE.Vector3(0,EYE,0),yaw:0,pitch:0},keys={};let drag=false,lx=0,ly=0,walk=false,lastTap=0,demo=0,demoT=0;
 function move(dx,dz){const p=player.pos;for(const[ax,az]of[[dx,0],[0,dz]]){const nx=p.x+ax,nz=p.z+az;if(Math.abs(nx)<ROOM.w/2-.6&&Math.abs(nz)<ROOM.d/2-.6&&!block.some(b=>nx>b.min.x&&nx<b.max.x&&nz>b.min.z&&nz<b.max.z)){p.x=nx;p.z=nz}}}
 function goTo(i){if(!i){player.pos.set(0,EYE,0);player.yaw=0;return}const e=EQ[i-1];if(!e)return;const r=THREE.MathUtils.degToRad(e.ry);player.pos.set(e.x+Math.sin(r)*3.8,EYE,e.z+Math.cos(r)*3.8);player.yaw=r;player.pitch=0}
-addEventListener('keydown',e=>{keys[e.code]=1;if(e.code=='KeyT')demo=!demo;if(/Digit\d/.test(e.code))goTo(+e.code.slice(5))});addEventListener('keyup',e=>keys[e.code]=0);
+addEventListener('keydown',e=>{keys[e.code]=1;if(e.code=='KeyT')demo=!demo;if(e.code=='KeyN'){player.pos.set(DOOR.x,EYE,-ROOM.d/2+4);player.yaw=0;player.pitch=0}if(/Digit\d/.test(e.code))goTo(+e.code.slice(5))});addEventListener('keyup',e=>keys[e.code]=0);
 const cv=renderer.domElement;cv.addEventListener('pointerdown',e=>{if(vr.on){walk=true;const n=performance.now();if(n-lastTap<350)vr.need=true;lastTap=n}else{drag=true;lx=e.clientX;ly=e.clientY}});
 addEventListener('pointerup',()=>walk=drag=false);addEventListener('pointermove',e=>{if(!drag||vr.on)return;player.yaw-=(e.clientX-lx)*.005;player.pitch=THREE.MathUtils.clamp(player.pitch-(e.clientY-ly)*.005,-1.3,1.3);lx=e.clientX;ly=e.clientY});
 
-/* ================= VR (Cardboard) : 좌/우 분할 + 자이로 + 가로 보정 ================= */
-const vr={on:false,fl:false,need:true,dev:new THREE.Quaternion(),off:new THREE.Quaternion(),roll:new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),Math.PI/2)},DG=Math.PI/180,AY=new THREE.Vector3(0,1,0);
+/* ================= VR (Cardboard) : 세로 돌아감 현상 해결 및 자이로센서 정렬 ================= */
+const vr={on:false,need:true,dev:new THREE.Quaternion(),off:new THREE.Quaternion()},DG=Math.PI/180,AY=new THREE.Vector3(0,1,0);
 const zee = new THREE.Vector3(0, 0, 1);
 const euler = new THREE.Euler();
 const q0 = new THREE.Quaternion();
 const q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+// Cardboard 스테레오 뷰포트에서 올바른 수평 방향을 유지하도록 roll 보정 제거 (세로 회전 문제 방지)
 
 function devQ(e){
   if(e.alpha == null) return;
@@ -256,7 +273,7 @@ function devQ(e){
   const gamma = e.gamma ? e.gamma * DG : 0;
   const orient = (screen.orientation ? screen.orientation.angle : window.orientation || 0) * DG;
 
-  euler.set(beta, alpha, -gamma, 'ZXY');
+  euler.set(beta, alpha, -gamma, 'YXZ');
   vr.dev.setFromEuler(euler);
   vr.dev.multiply(q1);
   q0.setFromAxisAngle(zee, -orient);
@@ -267,23 +284,107 @@ function devQ(e){
     vr.off.setFromAxisAngle(AY, -new THREE.Euler().setFromQuaternion(vr.dev, 'YXZ').y);
   }
 }
-const size=()=>vr.fl?[innerHeight,innerWidth]:[innerWidth,innerHeight];
-function resize(){const[w,h]=size();renderer.setSize(w,h);camera.aspect=(vr.on?w/2:w)/h;camera.updateProjectionMatrix()}
-function fit(){vr.fl=vr.on&&innerWidth<innerHeight;document.body.classList.toggle('fl',vr.fl);resize()}
-async function setVR(on){vr.on=on;document.body.classList.toggle('vr',on);if(on){vr.need=true;const D=window.DeviceOrientationEvent;if(D&&D.requestPermission){try{if(await D.requestPermission()=='granted')addEventListener('deviceorientation',devQ)}catch(e){}}else addEventListener('deviceorientation',devQ);
-document.documentElement.requestFullscreen?.().catch(()=>{});screen.orientation?.lock?.('landscape').catch(()=>{});addEventListener('orientationchange',fit)}else{document.exitFullscreen?.().catch(()=>{});removeEventListener('orientationchange',fit)}fit()}
+
+function resize(){
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w, h);
+  // VR 모드일 때는 전체 화면 가로 폭의 절반을 카메라 비율로 계산
+  camera.aspect = (vr.on ? (w / 2) : w) / h;
+  camera.updateProjectionMatrix();
+}
+
+function fit(){
+  resize();
+}
+
+async function setVR(on){
+  vr.on=on;
+  document.body.classList.toggle('vr',on);
+  if(on){
+    vr.need=true;
+    const D=window.DeviceOrientationEvent;
+    if(D && typeof D.requestPermission === 'function'){
+      try{
+        const res = await D.requestPermission();
+        if(res === 'granted'){
+          addEventListener('deviceorientation',devQ);
+        }
+      }catch(e){
+        console.warn('DeviceOrientation permission denied or error:', e);
+      }
+    }else{
+      addEventListener('deviceorientation',devQ);
+    }
+
+    try {
+      const el = document.documentElement;
+      if(el.requestFullscreen){
+        await el.requestFullscreen().catch(()=>{});
+      }else if(el.webkitRequestFullscreen){
+        el.webkitRequestFullscreen();
+      }
+    } catch(e) {}
+
+    try {
+      if(screen.orientation && typeof screen.orientation.lock === 'function'){
+        await screen.orientation.lock('landscape').catch(()=>{});
+      }
+    } catch(e) {}
+
+    addEventListener('orientationchange', fit);
+  }else{
+    try {
+      if(document.exitFullscreen){
+        await document.exitFullscreen().catch(()=>{});
+      }else if(document.webkitExitFullscreen){
+        document.webkitExitFullscreen();
+      }
+    } catch(e) {}
+    removeEventListener('orientationchange', fit);
+  }
+  setTimeout(fit, 200);
+}
+
 document.getElementById('vr').onclick=()=>setVR(true);document.getElementById('exit').onclick=()=>setVR(false);addEventListener('resize',fit);
-function eye(o,x,w,h){const p=camera.position.clone();camera.position.add(new THREE.Vector3(o,0,0).applyQuaternion(camera.quaternion));renderer.setViewport(x,0,w,h);renderer.setScissor(x,0,w,h);renderer.render(scene,camera);camera.position.copy(p)}
+
+function eye(o,x,w,h){
+  const p = camera.position.clone();
+  // 양안(Stereo) 시차 적용
+  camera.position.add(new THREE.Vector3(o, 0, 0).applyQuaternion(camera.quaternion));
+  renderer.setViewport(x, 0, w, h);
+  renderer.setScissor(x, 0, w, h);
+  renderer.render(scene, camera);
+  camera.position.copy(p);
+}
 
 /* ================= 루프 ================= */
 const clock=new THREE.Clock(),fw=new THREE.Vector3(),rt=new THREE.Vector3(),ORDER=['normal','running','standby','warning','maint'];
 fit();renderer.setAnimationLoop(()=>{const dt=Math.min(clock.getDelta(),.1),t=clock.elapsedTime;
-if(vr.on)camera.quaternion.copy(vr.off).multiply(vr.dev).multiply(vr.roll);else camera.rotation.set(player.pitch,player.yaw,0,'YXZ');
+if(vr.on){
+  // Cardboard 자이로 회전 적용 시 왜곡 및 세로 회전 문제 방지
+  camera.quaternion.copy(vr.off).multiply(vr.dev);
+}else{
+  camera.rotation.set(player.pitch,player.yaw,0,'YXZ');
+}
 camera.getWorldDirection(fw);fw.y=0;fw.normalize();rt.set(-fw.z,0,fw.x);
 const f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)+(walk?1:0),s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0),sp=(keys.ShiftLeft?3.2:1.6)*dt;
 if(f||s)move((fw.x*f+rt.x*s)*sp,(fw.z*f+rt.z*s)*sp);camera.position.copy(player.pos);
 if(demo&&t-demoT>2.5){demoT=t;EQ.forEach((e,i)=>digitalTwin.setStatus(e.id,ORDER[(Math.floor(t/2.5)+i)%5]))}
 EQ.forEach(e=>{const w=TW[e.id];w.anim&&w.anim(t,w.state=='running');w.leds.forEach(l=>l.visible=w.state!='running'||Math.floor(t*3)%2==0)});
-gaze(dt,t);
-if(vr.on){const[w,h]=size();renderer.setScissorTest(true);eye(-.032,0,w/2,h);eye(.032,w/2,w/2,h)}else{renderer.setScissorTest(false);const[w,h]=size();renderer.setViewport(0,0,w,h);renderer.render(scene,camera)}});
+gaze(dt,t);doorTick(dt);
+if(vr.on){
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setScissorTest(true);
+  // 좌우 분할 렌더링 (Cardboard 형식)
+  eye(-.032, 0, w / 2, h);
+  eye(.032, w / 2, w / 2, h);
+}else{
+  renderer.setScissorTest(false);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setViewport(0, 0, w, h);
+  renderer.render(scene, camera);
+}});
 </script></body></html>

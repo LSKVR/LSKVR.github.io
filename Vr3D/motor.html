@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>에드워즈 진공펌프 3D 모델</title>
+<style>
+:root{--bg:#f1f3f6;--panel:#ffffffee;--tx:#14181f;--sub:#566070;--bd:#d4d9e1;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--panel:#1b212bee;--tx:#f0f3f8;--sub:#a3adbd;--bd:#2f3846}}
+:root[data-theme="dark"]{--bg:#12161c;--panel:#1b212bee;--tx:#f0f3f8;--sub:#a3adbd;--bd:#2f3846}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Noto Sans KR","Malgun Gothic",sans-serif;overflow:hidden}
+#c{position:absolute;inset:0}
+h1{position:absolute;left:16px;top:calc(12px + env(safe-area-inset-top,0px));margin:0;font-size:20px;z-index:3}
+h1 span{color:#d99a00}
+.tag{position:absolute;z-index:2;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;cursor:pointer;box-shadow:0 2px 6px #0006}
+.tag.on{transform:scale(1.35)}
+#list{position:absolute;right:12px;top:56px;width:250px;max-height:calc(100% - 110px);overflow:auto;background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:6px;z-index:3}
+.it{display:flex;gap:8px;padding:8px;border-radius:8px;cursor:pointer}
+.it.on{background:#8883}
+.it b{display:block;font-size:14px}.it small{color:var(--sub);font-size:12px;line-height:1.35}
+.n{flex:none;width:22px;height:22px;border-radius:50%;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+#note{position:absolute;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:3;background:var(--panel);border:1px solid #d99a00;border-radius:10px;padding:8px 12px;font-size:13px}
+@media(max-width:700px){#list{top:auto;bottom:60px;width:auto;left:12px;right:12px;max-height:30%}h1{font-size:16px}}
+#edu{position:absolute;left:12px;top:56px;width:290px;background:var(--panel);border:1px solid var(--bd);border-radius:12px;z-index:3;padding:10px;font-size:13px}
+#tabs{display:flex;gap:4px;margin-bottom:8px}
+#tabs button,.btn{flex:1;border:1px solid var(--bd);background:transparent;color:var(--tx);border-radius:8px;padding:6px;font:inherit;cursor:pointer}
+#tabs button.on,.btn.pri{background:#1f6fe0;color:#fff;border-color:#1f6fe0}
+.pg{display:none}.pg.on{display:block}
+.pg h3{margin:4px 0;font-size:15px}.pg p{margin:4px 0;line-height:1.5}
+.tip{background:#d99a0022;border-left:3px solid #d99a00;padding:6px 8px;border-radius:4px;margin-top:6px}
+.row{display:flex;gap:6px;margin-top:8px;align-items:center}
+.opt{display:block;width:100%;text-align:left;margin-top:5px}
+.opt.ok{background:#2e9a2e;color:#fff}.opt.no{background:#d01f1f;color:#fff}
+.bar{height:5px;background:var(--bd);border-radius:3px;margin-top:6px}.bar i{display:block;height:100%;background:#2e9a2e;border-radius:3px;width:0}
+@media(max-width:700px){#edu{top:auto;bottom:56px;left:12px;right:12px;width:auto;max-height:40%;overflow:auto}#list{display:none}}
+#edu{max-height:calc(100% - 120px);overflow:auto}
+#tabs button{font-size:12px;padding:6px 2px}
+#gl{list-style:none;padding:0;margin:6px 0}
+#gl li{display:flex;gap:8px;padding:6px;border-radius:8px;border:1px solid var(--bd);margin-bottom:5px;align-items:flex-start}
+#gl li span{cursor:pointer;line-height:1.4}#gl small{color:var(--sub)}
+</style>
+</head>
+<body>
+<h1>에드워즈 진공펌프 <span>구성과 기능</span></h1>
+<div id="c"></div>
+<div id="list"></div>
+<div id="edu"><div id="tabs"><button class="on" data-p="p1">학습</button><button data-p="p2">분해도</button><button data-p="p3">퀴즈</button><button data-p="p4">실습</button><button data-p="p5">가이드</button></div>
+<div class="pg on" id="p1"><div class="bar"><i id="lb"></i></div><h3 id="lt">구성 요소를 선택하세요</h3><p id="ld">‘다음’을 누르면 7개 부위를 순서대로 학습합니다.</p><div class="tip" id="ltip" style="display:none"></div><div class="row"><button class="btn" id="prev">◀ 이전</button><button class="btn pri" id="next">다음 ▶</button></div></div>
+<div class="pg" id="p2"><h3>분해도</h3><p>슬라이더를 움직여 덮개, 본체, 점검·연결부를 분리해 보세요.</p><input type="range" id="ex" min="0" max="100" value="0" style="width:100%"></div>
+<div class="pg" id="p3"><div class="bar"><i id="qb"></i></div><h3 id="qq"></h3><div id="qo"></div><p id="qf"></p><div class="row"><button class="btn pri" id="qn" style="display:none">다음 문제</button></div></div>
+<div class="pg" id="p4"><h3>실습</h3><div class="row" style="margin-top:0"><button class="btn pri" data-s="0">점검 정비</button><button class="btn" data-s="1">이동 준비</button></div><p id="pi"></p><ol id="ps" style="padding-left:20px;margin:6px 0;line-height:1.6"></ol><p id="pf"></p><button class="btn" id="pr">처음부터</button></div>
+<div class="pg" id="p5"><h3>설치·사용 가이드</h3><div class="row" style="margin-top:0"><button class="btn pri" data-g="0">설치방법</button><button class="btn" data-g="1">사용방법</button></div><p id="gc" style="color:var(--sub)"></p><ul id="gl"></ul><div class="tip">⚠ 일반적인 학습용 흐름입니다. 모델별 실제 절차·규격·안전 기준은 제조사 매뉴얼과 사업장 규정을 따르세요.</div></div></div>
+<div id="note">⚠ 내부 부품과 일부 연결구의 정확한 위치는 사진만으로 확인할 수 없습니다. (드래그: 회전 · 휠/핀치: 확대)</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const INFO=[
+ ["흡입구","공정 챔버의 기체가 유입되는 곳입니다.","#d01f1f",[0.45,1.78,-0.1]],
+ ["본체 덮개","진공펌프의 내부를 보호합니다.","#1f6fe0",[-0.6,1.5,0.5]],
+ ["점검 패널","펌프 내부 점검 및 정비를 위한 접근 통로입니다.","#2e9a2e",[1.12,1.0,-0.1]],
+ ["배기 연결부","펌프에서 배출되는 기체가 배출되는 연결 부위입니다.","#12a3a8",[1.55,0.55,0.4]],
+ ["이동 바퀴","장비를 이동할 때 사용하는 바퀴입니다.","#e8650f",[-0.95,0.12,0.6]],
+ ["하부 받침부","장비의 하중을 지지하는 구조물입니다.","#7a2fb8",[0.2,0.3,0.72]],
+ ["설비 연결부","전원, 냉각수, 질소 배관 등을 연결하는 부분입니다.","#c9a400",[1.12,0.5,-0.5]]
+];
+const wrap=document.getElementById('c');
+const R=new THREE.WebGLRenderer({antialias:true,alpha:true});
+R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;
+wrap.appendChild(R.domElement);
+const S=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(40,1,0.1,100);cam.position.set(3.6,2.4,4.2);
+const ctl=new THREE.OrbitControls(cam,R.domElement);ctl.target.set(0.2,0.8,0);ctl.enableDamping=true;ctl.maxPolarAngle=Math.PI*0.49;
+S.add(new THREE.HemisphereLight(0xffffff,0x778899,0.85));
+const dl=new THREE.DirectionalLight(0xffffff,0.9);dl.position.set(4,6,5);dl.castShadow=true;S.add(dl);
+
+const M=(c,r=0.5,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
+const white=M(0xf4f5f7,0.45),gray=M(0x8b8e93,0.55),black=M(0x15161a,0.7),steel=M(0xb9bec6,0.25,0.9),red=M(0xc8202a,0.5);
+function box(w,h,d,mat,x,y,z,p=S){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;p.add(m);return m}
+function cyl(r,h,mat,x,y,z,rot,p=S){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,40),mat);m.position.set(x,y,z);if(rot==='x')m.rotation.z=Math.PI/2;if(rot==='z')m.rotation.x=Math.PI/2;m.castShadow=true;p.add(m);return m}
+function label(txt,w,h,col,bg){const c=document.createElement('canvas');c.width=512;c.height=Math.round(512*h/w);const g=c.getContext('2d');if(bg){g.fillStyle=bg;g.fillRect(0,0,c.width,c.height)}g.fillStyle=col;g.font='italic 800 '+Math.round(c.height*0.8)+'px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,c.width/2,c.height/2+4);const t=new THREE.CanvasTexture(c);return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true}))}
+
+// floor
+const fl=new THREE.Mesh(new THREE.PlaneGeometry(14,14),new THREE.ShadowMaterial({opacity:0.25}));fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;S.add(fl);
+S.add(new THREE.GridHelper(14,28,0x8890a0,0x8890a044));
+
+// body (x: length 2.2, z: depth 1.4)
+box(2.2,0.42,1.4,gray,0,0.46,0);                 // lower gray
+box(2.2,0.62,1.4,white,0,0.98,0);                // upper white
+box(2.26,0.07,1.46,white,0,1.33,0);              // cover
+box(2.12,0.04,1.32,M(0xe6e8ec,0.5),0,1.375,0);   // cover panel
+box(1.0,0.26,0.62,white,-0.35,1.52,-0.3);        // electronics box
+box(0.3,0.03,0.05,M(0xe5b800),-0.5,1.66,-0.05);  // yellow label strip
+for(let i=0;i<3;i++)cyl(0.025,0.03,black,-0.7+i*0.08,1.52,-0.0,'z');
+box(0.2,0.1,0.01,black,-0.1,1.5,-0.0);           // network port
+// inlet flange
+cyl(0.2,0.1,steel,0.45,1.42,-0.1);cyl(0.15,0.26,steel,0.45,1.58,-0.1);cyl(0.21,0.05,steel,0.45,1.73,-0.1);
+const hole=cyl(0.1,0.06,black,0.45,1.76,-0.1);
+for(let a=0;a<6;a++){const b=box(0.04,0.12,0.04,steel,0.45+Math.cos(a)*0.2,1.62,-0.1+Math.sin(a)*0.2);}
+// front (+z) details
+const iq=label('iQ',1.3,0.75,'#d9dce1');iq.position.set(-0.55,0.55,0.705);S.add(iq);
+const ed=label('EDWARDS',0.65,0.12,'#c8202a');ed.position.set(0.1,1.15,0.705);S.add(ed);
+const ed2=label('EDWARDS',0.5,0.09,'#c8202a');ed2.position.set(-0.1,0.3,0.71);S.add(ed2);
+const rh=new THREE.Mesh(new THREE.CircleGeometry(0.14,40),new THREE.MeshBasicMaterial({color:0x1a1a1e}));rh.position.set(-0.4,0.95,0.705);S.add(rh);
+// right side (+x) details
+box(0.03,0.52,1.0,M(0xeceef1,0.45),1.115,1.0,-0.05);          // service panel
+for(const [y,z] of [[1.22,-0.5],[1.22,0.42],[0.76,-0.5],[0.76,0.42]])box(0.12,0.1,0.12,black,1.16,y,z); // latches
+box(0.06,0.1,0.12,black,1.13,0.62,0.7);box(0.12,0.12,0.06,black,1.0,1.22,0.72);
+box(0.03,0.32,0.34,white,1.115,0.52,-0.5);                      // utility panel
+cyl(0.045,0.04,black,1.14,0.6,-0.5,'x');cyl(0.045,0.04,black,1.14,0.44,-0.5,'x');
+// exhaust connection
+cyl(0.2,0.35,steel,1.28,0.5,0.4,'x');cyl(0.12,0.2,steel,1.5,0.5,0.4,'x');cyl(0.07,0.06,steel,1.63,0.5,0.4,'x');
+box(0.06,0.06,0.05,red,1.4,0.64,0.4);
+// base frame and casters
+box(2.3,0.07,1.5,M(0xdfe2e6,0.4),0,0.25,0);
+for(const x of [-0.9,0.9])for(const z of [-0.55,0.55]){
+ box(0.12,0.06,0.12,black,x,0.2,z);
+ cyl(0.05,0.1,black,x,0.15,z);
+ const w=cyl(0.1,0.1,red,x,0.1,z,'z');w.rotation.z=0;
+}
+
+// UI
+const list=document.getElementById('list'),tags=[];
+INFO.forEach((d,i)=>{
+ const it=document.createElement('div');it.className='it';
+ it.innerHTML=`<div class="n" style="background:${d[2]}">${i+1}</div><div><b>${d[0]}</b><small>${d[1]}</small></div>`;
+ it.onclick=()=>sel(i);list.appendChild(it);
+ const t=document.createElement('div');t.className='tag';t.style.background=d[2];t.textContent=i+1;t.onclick=()=>sel(i);document.body.appendChild(t);tags.push({t,it,p:new THREE.Vector3(...d[3])});
+});
+function sel(i){window.onSel&&window.onSel(i);tags.forEach((o,j)=>{o.t.classList.toggle('on',i===j);o.it.classList.toggle('on',i===j)});ctl.target.lerp(tags[i].p,0.5)}
+function resize(){const w=innerWidth,h=innerHeight;R.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+const v=new THREE.Vector3();
+(function loop(){requestAnimationFrame(loop);ctl.update();R.render(S,cam);
+ tags.forEach(o=>{v.copy(o.p).project(cam);o.t.style.left=((v.x+1)/2*innerWidth)+'px';o.t.style.top=((1-v.y)/2*innerHeight)+'px';o.t.style.display=v.z<1?'flex':'none'})})();
+
+/* ===== 교육 모드 ===== */
+const DET=[
+["공정 챔버와 배관으로 연결되어 기체를 빨아들입니다. 연결부의 실링 상태가 진공도에 직접 영향을 줍니다.","연결·분리 전 챔버 격리와 대기압 복귀를 반드시 확인하세요."],
+["내부 펌프와 구동부를 먼지와 접촉으로부터 보호하고 외관을 구성합니다.","운전 중에는 덮개를 임의로 열지 마세요."],
+["펌프 내부를 점검·정비할 때 여는 접근 통로입니다. 래치로 고정됩니다.","패널을 열기 전 전원을 차단하고 잠금·표지(LOTO)를 하세요."],
+["펌프에서 배출된 기체를 배기 배관과 후단 처리설비 쪽으로 보냅니다.","배기 배관의 막힘·누설을 점검하세요. 공정 배기 가스는 유해할 수 있습니다."],
+["설치와 이동을 위한 캐스터입니다.","이동 전 모든 배관과 케이블을 분리하고, 설치 후에는 위치를 고정하세요."],
+["장비 전체 하중을 지지하는 하부 프레임입니다.","평탄하고 하중을 견디는 바닥에 설치하세요."],
+["전원, 냉각수, 질소 배관 등 유틸리티를 연결하는 부분입니다.","연결 위치와 규격은 해당 모델 매뉴얼로 확인하세요."]];
+let cur=-1;
+window.onSel=i=>{cur=i;document.getElementById('lt').textContent=(i+1)+'. '+INFO[i][0];document.getElementById('ld').textContent=DET[i][0];const t=document.getElementById('ltip');t.style.display='block';t.textContent='⚠ 안전 포인트: '+DET[i][1];document.getElementById('lb').style.width=((i+1)/7*100)+'%'};
+document.getElementById('next').onclick=()=>sel((cur+1)%7);
+document.getElementById('prev').onclick=()=>sel((cur+6)%7);
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p))});
+// 분해도
+const parts=[];S.children.forEach(o=>{if(!o.isMesh||o===fl)return;const y=o.position.y,x=o.position.x;let d=null;if(y>=1.3)d=[0,1.2,0];else if(x>=1.0)d=[0.9,0.5,0];else if(y>=0.3)d=[0,0.5,0];if(d)parts.push([o,o.position.clone(),d])});
+const TO=[[0,1.2,0],[0,1.2,0],[0.9,0.5,0],[0.9,0.5,0],[0,0,0],[0,0,0],[0.9,0.5,0]];
+tags.forEach((o,i)=>o.p0=o.p.clone());
+document.getElementById('ex').oninput=e=>{const k=e.target.value/100;parts.forEach(([o,p,d])=>o.position.set(p.x+d[0]*k,p.y+d[1]*k,p.z+d[2]*k));tags.forEach((o,i)=>o.p.set(o.p0.x+TO[i][0]*k,o.p0.y+TO[i][1]*k,o.p0.z+TO[i][2]*k))};
+// 퀴즈
+const Q=[["공정 챔버의 기체가 유입되는 곳은?",["배기 연결부","흡입구","점검 패널","이동 바퀴"],1,0],
+["내부 점검과 정비를 위한 접근 통로는?",["점검 패널","본체 덮개","하부 받침부","흡입구"],0,2],
+["펌프에서 배출되는 기체가 나가는 연결 부위는?",["설비 연결부","흡입구","배기 연결부","점검 패널"],2,3],
+["전원, 냉각수, 질소 배관을 연결하는 부분은?",["설비 연결부","배기 연결부","본체 덮개","이동 바퀴"],0,6],
+["장비를 옮길 때 사용하는 부품은?",["하부 받침부","점검 패널","흡입구","이동 바퀴"],3,4]];
+let qi=0,sc=0;
+function showQ(){const q=Q[qi],o=document.getElementById('qo');document.getElementById('qq').textContent='Q'+(qi+1)+'. '+q[0];document.getElementById('qf').textContent='';document.getElementById('qn').style.display='none';document.getElementById('qb').style.width=(qi/Q.length*100)+'%';o.innerHTML='';q[1].forEach((t,k)=>{const b=document.createElement('button');b.className='btn opt';b.textContent=t;b.onclick=()=>{if(b.disabled)return;o.querySelectorAll('button').forEach(x=>x.disabled=true);const ok=k===q[2];if(ok)sc++;b.classList.add(ok?'ok':'no');o.children[q[2]].classList.add('ok');document.getElementById('qf').textContent=(ok?'정답입니다! ':'오답입니다. ')+'정답: '+q[1][q[2]];sel(q[3]);const n=document.getElementById('qn');n.style.display='block';n.textContent=qi===Q.length-1?'결과 보기':'다음 문제'};o.appendChild(b)})}
+document.getElementById('qn').onclick=()=>{if(qi>=Q.length){qi=0;sc=0;showQ();return}qi++;if(qi>=Q.length){document.getElementById('qq').textContent='결과: '+sc+' / '+Q.length;document.getElementById('qo').innerHTML='';document.getElementById('qf').textContent=sc===Q.length?'모든 부위를 완벽히 이해했어요!':'학습 탭에서 틀린 부위를 다시 복습해 보세요.';document.getElementById('qb').style.width='100%';const n=document.getElementById('qn');n.textContent='다시 풀기';n.style.display='block';return}showQ()};
+showQ();
+
+/* ===== 실습 ===== */
+const SC=[
+{n:"점검 패널 정비 절차",s:[["설비 연결부에서 전원을 차단하세요 (LOTO).",6],["흡입구를 공정 챔버로부터 격리하세요.",0],["배기 연결부가 차단·분리되었는지 확인하세요.",3],["점검 패널을 열어 내부에 접근하세요.",2],["정비를 마쳤습니다. 점검 패널을 닫으세요.",2]]},
+{n:"장비 이동 준비 절차",s:[["설비 연결부의 전원·냉각수·질소 배관을 분리하세요.",6],["배기 연결부를 분리하세요.",3],["흡입구를 분리하고 보호 캡을 씌우세요.",0],["이동 바퀴를 사용해 장비를 옮길 준비를 하세요.",4],["이동 후 하부 받침부가 평탄한 바닥에 놓였는지 확인하세요.",5]]}];
+const panel=S.children.find(o=>o.isMesh&&o.geometry.parameters&&o.geometry.parameters.height===0.52&&o.geometry.parameters.depth===1&&Math.abs(o.position.x-1.115)<0.01);
+const latches=S.children.filter(o=>o.isMesh&&Math.abs(o.position.x-1.16)<0.001&&o.geometry.parameters&&o.geometry.parameters.width===0.12);
+const cav=box(0.03,0.5,0.98,M(0x1a1d24,0.8),1.112,1.0,-0.05);cav.visible=false;
+function setOpen(b){if(panel)panel.position.x=1.115+(b?0.6:0);latches.forEach(l=>l.visible=!b);cav.visible=b}
+let sc2=0,si=0,wr=0,prOn=false;
+const $=id=>document.getElementById(id);
+function render(){const st=SC[sc2].s;$('pi').textContent='시나리오: '+SC[sc2].n+' — 올바른 순서대로 3D의 번호 마커(또는 오른쪽 목록)를 클릭하세요.';$('ps').innerHTML=st.map((x,k)=>'<li style="'+(k<si?'color:#2e9a2e;text-decoration:line-through':k===si?'font-weight:700':'color:var(--sub)')+'">'+x[0]+'</li>').join('');if(si>=st.length)$('pf').textContent='✅ 실습 완료! 실제 작업에서는 해당 모델 매뉴얼의 절차를 따르세요.'}
+function reset(){si=0;wr=0;setOpen(false);$('pf').textContent='';render()}
+function flash(i,c){const t=tags[i].t,o=t.style.background;t.style.background=c;setTimeout(()=>t.style.background=o,600)}
+const prevSel=window.onSel;
+window.onSel=i=>{prevSel(i);if(!prOn)return;const st=SC[sc2].s;if(si>=st.length)return;
+ if(i===st[si][1]){flash(i,'#2e9a2e');if(sc2===0&&si===3)setOpen(true);if(sc2===0&&si===4)setOpen(false);si++;wr=0;$('pf').textContent=si<st.length?'정답! 다음 단계로 진행하세요.':'';render()}
+ else{flash(i,'#d01f1f');wr++;$('pf').textContent='❌ "'+INFO[i][0]+'"는 이 단계의 대상이 아닙니다.'+(wr>=2?' 힌트: '+(st[si][1]+1)+'번 '+INFO[st[si][1]][0]:'')}};
+document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{prOn=b.dataset.p==='p4';if(prOn)reset();else setOpen(false)}));
+document.querySelectorAll('#p4 [data-s]').forEach(b=>b.onclick=()=>{sc2=+b.dataset.s;document.querySelectorAll('#p4 [data-s]').forEach(x=>x.classList.toggle('pri',x===b));reset()});
+$('pr').onclick=reset;
+
+/* ===== 설치·사용 가이드 ===== */
+const G=[
+[["설치 위치 확인","평탄하고 하중을 견딜 수 있는 바닥인지, 점검 패널을 열 여유 공간이 있는지 확인합니다.",5],
+["이동 및 위치 고정","이동 바퀴로 설치 위치까지 옮긴 뒤 바퀴를 고정해 움직이지 않게 합니다.",4],
+["흡입구 연결","공정 챔버 배관을 흡입구에 연결하고 실링(O-링)과 클램프 체결 상태를 확인합니다.",0],
+["배기 연결","배기 배관을 후단 처리 설비에 연결하고 누설·막힘이 없는지 확인합니다.",3],
+["유틸리티 연결","설비 연결부에 전원, 냉각수, 질소 배관을 규격에 맞게 연결합니다.",6],
+["점검 패널 체결 확인","래치가 모두 잠겼는지 확인합니다.",2],
+["덮개·최종 점검","덮개와 외관을 확인하고 연결부 누설 점검 후 시운전을 준비합니다.",1]],
+[["운전 전 점검","덮개·패널이 닫혀 있고 연결 상태가 정상인지 확인합니다.",1],
+["유틸리티 공급 확인","냉각수·질소·전원이 정상 공급되는지 확인합니다.",6],
+["기동","전원을 투입하고 상단 제어부의 상태 표시가 정상인지 보고 운전을 시작합니다.",1],
+["챔버 배기 시작","흡입구를 통해 공정 챔버의 기체를 배기합니다.",0],
+["운전 중 모니터링","소음·진동·경보 여부와 배기 상태를 주기적으로 확인합니다.",3],
+["정지","챔버를 격리한 뒤 정지하고 필요 시 유틸리티를 차단합니다.",6],
+["정비가 필요할 때","전원 차단(LOTO) 후 점검 패널을 열어 작업합니다.",2]]];
+let gm=0;const gd=[[],[]];
+function gcnt(){const n=gd[gm].filter(Boolean).length;$('gc').textContent='진행: '+n+' / '+G[gm].length+(n===G[gm].length?' ✅ 완료':'')+' · 항목을 누르면 해당 부위가 표시됩니다.'}
+function grender(){const ul=$('gl');ul.innerHTML='';G[gm].forEach((x,k)=>{const li=document.createElement('li');const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!gd[gm][k];cb.onchange=()=>{gd[gm][k]=cb.checked;gcnt()};const sp=document.createElement('span');sp.innerHTML='<b>'+(k+1)+'. '+x[0]+'</b> <small>('+INFO[x[2]][0]+')</small><br><small>'+x[1]+'</small>';sp.onclick=()=>sel(x[2]);li.append(cb,sp);ul.appendChild(li)});gcnt()}
+document.querySelectorAll('#p5 [data-g]').forEach(b=>b.onclick=()=>{gm=+b.dataset.g;document.querySelectorAll('#p5 [data-g]').forEach(x=>x.classList.toggle('pri',x===b));grender()});
+grender();
+</script>
+</body>
+</html>

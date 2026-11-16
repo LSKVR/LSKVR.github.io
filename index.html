@@ -510,6 +510,23 @@
         grid-template-columns: repeat(2, 1fr);
       }
     }
+
+    /* ============================
+       VISITOR COUNTER
+    ============================ */
+    .visitor-counter {
+      margin-top: 14px;
+      font-size: 13px;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    .visitor-counter strong {
+      color: var(--accent2);
+      font-weight: 700;
+      margin-left: 6px;
+    }
+
   </style>
 </head>
 <body>
@@ -592,6 +609,15 @@
           <span class="practice-card-arrow" aria-hidden="true">→</span>
         </a>
 
+        <a href="Vr3D/motor.html" class="practice-card seoul" target="_blank" rel="noopener noreferrer">
+          <span class="practice-card-icon" aria-hidden="true">⚙️</span>
+          <div class="practice-card-info">
+            <div class="practice-card-title">모터</div>
+            <div class="practice-card-desc">모터 실습 파일</div>
+          </div>
+          <span class="practice-card-arrow" aria-hidden="true">→</span>
+        </a>
+
          <a href="Vr3D/index.html" class="practice-card seoul" target="_blank" rel="noopener noreferrer">
           <span class="practice-card-icon" aria-hidden="true">🏙️</span>
           <div class="practice-card-info">
@@ -645,6 +671,9 @@
 
   <footer>
     <span>© 2026 이상경의 웹프로그래밍 · 여주대학교</span>
+    <div class="visitor-counter">
+      방문 횟수 <strong id="visit-count">확인 중...</strong>
+    </div>
     <div class="footer-line"></div>
   </footer>
 
@@ -800,17 +829,24 @@
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
     }, { threshold: 0.1 });
     document.querySelectorAll('.section').forEach(s => observer.observe(s));
-    
   </script>
 
-  <!-- hitwebcounter Code START -->
-<div align="center">
-  <a href="https://www.hitwebcounter.com/age-calculator" target="_blank" rel="noopener" title="Age in weeks Counter">
-    <img src="https://www.hitwebcounter.com/counter/counter.php?page=21528576&amp;style=0006&amp;nbdigits=1&amp;type=page" alt="Age in weeks Counter" decoding="async" style="border:0;max-width:100%;height:auto;" />
-  </a>
-  <br />
-  <a href="https://www.hitwebcounter.com/" target="_blank" rel="noopener" style="font-family:Geneva, Arial, Helvetica, sans-serif;font-size:8px;color:#686A6F;text-decoration:none;font-weight:strong;">Website Visits</a>
-</div>
-<!-- hitwebcounter Code END -->
+  <script>
+    // 현재 브라우저에 저장되는 방문 횟수
+    (function () {
+      const counterElement = document.getElementById('visit-count');
+      const storageKey = 'lskvr_website_visit_count';
+
+      try {
+        let visitCount = Number(localStorage.getItem(storageKey)) || 0;
+        visitCount += 1;
+        localStorage.setItem(storageKey, String(visitCount));
+        counterElement.textContent = visitCount.toLocaleString('ko-KR') + '회';
+      } catch (error) {
+        counterElement.textContent = '집계할 수 없음';
+      }
+    })();
+  </script>
+
 </body>
 </html>
