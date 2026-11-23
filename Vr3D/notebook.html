@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>노트북 3D · CMD</title>
+<style>
+  :root { --bg1:#1d2733; --bg2:#0b0f14; --fg:#d8e1ea; }
+  @media (prefers-color-scheme: light) { :root { --bg1:#dfe7ee; --bg2:#aebccb; --fg:#1b2530; } }
+  html, body { margin:0; height:100%; overflow:hidden; }
+  body { background:radial-gradient(ellipse at 50% 35%, var(--bg1), var(--bg2)); color:var(--fg);
+         font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif; }
+  canvas { display:block; touch-action:none; }
+  #hint { position:fixed; left:0; right:0; bottom:0; padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
+          text-align:center; font-size:14px; opacity:.8; pointer-events:none; }
+  #kbd { position:fixed; left:-1000px; top:0; opacity:0; }
+</style>
+</head>
+<body>
+<input id="kbd" autocomplete="off" autocapitalize="off" spellcheck="false">
+<div id="hint">키보드를 누르면 화면의 CMD에 입력됩니다 · 드래그로 회전 · 휠로 확대 · help 입력해 보세요</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  /* ---------- Renderer / Scene ---------- */
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  document.body.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+  let camDist = 9;
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 0.7));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+  sun.position.set(4, 8, 5); sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  Object.assign(sun.shadow.camera, { left:-6, right:6, top:6, bottom:-6 });
+  scene.add(sun);
+  const glow = new THREE.PointLight(0x9fd0ff, 0.6, 6);
+  scene.add(glow);
+
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(8, 64),
+    new THREE.ShadowMaterial({ opacity: 0.35 }));
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
+  scene.add(ground);
+
+  /* ---------- Terminal (canvas texture) ---------- */
+  const cv = document.createElement('canvas');
+  cv.width = 1024; cv.height = 640;
+  const g = cv.getContext('2d');
+  const tex = new THREE.CanvasTexture(cv);
+  tex.anisotropy = 8;
+
+  const PROMPT = 'C:\\Users\\Student>';
+  const lines = [
+    'Microsoft Windows [Version 10.0.22631.4460]',
+    '(c) Microsoft Corporation. All rights reserved.',
+    ''
+  ];
+  let input = '', cursorOn = true;
+  const FONT = '22px Consolas, "D2Coding", "Courier New", monospace';
+  const LH = 28, PAD = 16, TITLE = 40;
+
+  function wrap(text) {
+    g.font = FONT;
+    const maxW = cv.width - PAD * 2, out = []; let cur = '';
+    for (const ch of text) {
+      if (g.measureText(cur + ch).width > maxW) { out.push(cur); cur = ch; } else cur += ch;
+    }
+    out.push(cur); return out;
+  }
+
+  function draw() {
+    g.fillStyle = '#0c0c0c'; g.fillRect(0, 0, cv.width, cv.height);
+    // title bar
+    g.fillStyle = '#f3f3f3'; g.fillRect(0, 0, cv.width, TITLE);
+    g.fillStyle = '#111'; g.fillRect(14, 12, 16, 16);
+    g.font = '18px "Segoe UI", sans-serif'; g.fillStyle = '#222'; g.textBaseline = 'middle';
+    g.fillText('C:\\WINDOWS\\system32\\cmd.exe', 42, 21);
+    g.font = '22px "Segoe UI", sans-serif';
+    g.fillText('—', cv.width - 150, 20); g.fillText('□', cv.width - 100, 20); g.fillText('✕', cv.width - 50, 20);
+    // body
+    g.font = FONT; g.textBaseline = 'alphabetic'; g.fillStyle = '#cccccc';
+    const all = [];
+    lines.forEach(l => wrap(l).forEach(w => all.push(w)));
+    const cur = wrap(PROMPT + input);
+    cur.forEach(w => all.push(w));
+    const rows = Math.floor((cv.height - TITLE - PAD) / LH);
+    const view = all.slice(-rows);
+    view.forEach((t, i) => g.fillText(t, PAD, TITLE + PAD + LH * (i + 1) - 8));
+    if (cursorOn) {
+      const last = cur[cur.length - 1], x = PAD + g.measureText(last).width;
+      g.fillRect(x + 2, TITLE + PAD + LH * view.length - 8 - 20, 12, 22);
+    }
+    tex.needsUpdate = true;
+  }
+
+  function run(cmdLine) {
+    const raw = cmdLine.trim(), [c, ...rest] = raw.split(/\s+/), arg = rest.join(' ');
+    switch (c.toLowerCase()) {
+      case '': break;
+      case 'cls': lines.length = 0; return;
+      case 'help':
+        lines.push('Supported commands:', '  HELP   CLS   ECHO   VER   DATE   TIME', '  DIR    WHOAMI HOSTNAME  COLOR  EXIT'); break;
+      case 'echo': lines.push(arg || 'ECHO is on.'); break;
+      case 'ver': lines.push('', 'Microsoft Windows [Version 10.0.22631.4460]'); break;
+      case 'date': lines.push('The current date is: ' + new Date().toLocaleDateString('ko-KR')); break;
+      case 'time': lines.push('The current time is: ' + new Date().toLocaleTimeString('en-GB')); break;
+      case 'whoami': lines.push('desktop-3d\\student'); break;
+      case 'hostname': lines.push('DESKTOP-3D'); break;
+      case 'dir':
+        lines.push(' Directory of C:\\Users\\Student', '',
+          '11/23/2026  09:00 AM    <DIR>          Documents',
+          '11/23/2026  09:00 AM    <DIR>          Downloads',
+          '11/23/2026  09:12 AM             1,024 notebook.html',
+          '               1 File(s)          1,024 bytes'); break;
+      case 'color': lines.push('(color change is not supported in this demo)'); break;
+      case 'exit': lines.push('Nice try. The window stays open.'); break;
+      default:
+        lines.push("'" + c + "' is not recognized as an internal or external command,", 'operable program or batch file.');
+    }
+    lines.push('');
+  }
+
+  /* ---------- Laptop model ---------- */
+  const laptop = new THREE.Group(); scene.add(laptop);
+  const alu = new THREE.MeshStandardMaterial({ color: 0xb9c0c8, metalness: 0.85, roughness: 0.35 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x15181c, roughness: 0.6 });
+
+  const BW = 4.2, BD = 2.9, BH = 0.14;
+  const base = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, BD), alu);
+  base.position.y = BH / 2; base.castShadow = base.receiveShadow = true; laptop.add(base);
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(BW - 0.2, 0.01, BD - 0.2), dark);
+  deck.position.set(0, BH + 0.004, 0); laptop.add(deck);
+
+  const pad = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.012, 0.8),
+    new THREE.MeshStandardMaterial({ color: 0x2a2f36, roughness: 0.3, metalness: 0.3 }));
+  pad.position.set(0, BH + 0.01, 1.0); laptop.add(pad);
+
+  // lid with hinge
+  const hinge = new THREE.Group();
+  hinge.position.set(0, BH, -BD / 2 + 0.08); hinge.rotation.x = -0.28; laptop.add(hinge);
+  const LW = BW, LHt = 2.7;
+  const lid = new THREE.Mesh(new THREE.BoxGeometry(LW, LHt, 0.09), alu);
+  lid.position.y = LHt / 2; lid.castShadow = true; hinge.add(lid);
+  const bezel = new THREE.Mesh(new THREE.PlaneGeometry(LW - 0.12, LHt - 0.12),
+    new THREE.MeshBasicMaterial({ color: 0x050607 }));
+  bezel.position.set(0, LHt / 2, 0.046); hinge.add(bezel);
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(3.84, 2.4), new THREE.MeshBasicMaterial({ map: tex }));
+  screen.position.set(0, LHt / 2 - 0.02, 0.048); hinge.add(screen);
+  const cam = new THREE.Mesh(new THREE.CircleGeometry(0.025, 16), new THREE.MeshBasicMaterial({ color: 0x1a3a5a }));
+  cam.position.set(0, LHt - 0.065, 0.049); hinge.add(cam);
+  const hg = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, BW - 0.6, 24), dark);
+  hg.rotation.z = Math.PI / 2; hg.position.set(0, 0.02, 0); hinge.add(hg);
+
+  /* ---------- Keyboard ---------- */
+  function labelTex(t) {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d'); x.fillStyle = '#23272d'; x.fillRect(0, 0, 128, 128);
+    x.fillStyle = '#e6edf3'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = (t.length > 1 ? 30 : 56) + 'px sans-serif'; x.fillText(t, 64, 68);
+    return new THREE.CanvasTexture(c);
+  }
+  const rows = [
+    [['`'],['1'],['2'],['3'],['4'],['5'],['6'],['7'],['8'],['9'],['0'],['-'],['='],['Backspace',2]],
+    [['Tab',1.5],['q'],['w'],['e'],['r'],['t'],['y'],['u'],['i'],['o'],['p'],['['],[']'],['\\',1.5]],
+    [['Caps',1.75],['a'],['s'],['d'],['f'],['g'],['h'],['j'],['k'],['l'],[';'],["'"],['Enter',2.25]],
+    [['Shift',2.25],['z'],['x'],['c'],['v'],['b'],['n'],['m'],[','],['.'],['/'],['Shift',2.75]],
+    [['Ctrl',2],['Alt',2],[' ',7],['Alt',2],['Ctrl',2]]
+  ];
+  const U = 0.25, GAP = 0.03, keys = {};
+  rows.forEach((row, r) => {
+    let x = -(15 * U) / 2; const z = -0.95 + r * (U + 0.02) * 1.02 + (r === 4 ? 0.04 : 0);
+    row.forEach(([label, w = 1]) => {
+      const kw = w * U - GAP, cx = x + (w * U) / 2; x += w * U;
+      const m = new THREE.Mesh(new THREE.BoxGeometry(kw, 0.06, U - GAP),
+        [dark, dark, new THREE.MeshStandardMaterial({ map: labelTex(label === ' ' ? '' : label), roughness: 0.5 }), dark, dark, dark]);
+      m.position.set(cx, BH + 0.04, z); m.castShadow = true; laptop.add(m);
+      const id = label.toLowerCase();
+      (keys[id] = keys[id] || []).push(m);
+    });
+  });
+  function press(id) {
+    const list = keys[id.toLowerCase()]; if (!list) return;
+    list.forEach(m => {
+      m.position.y = BH + 0.015;
+      m.material[2].emissive.setHex(0x335577);
+      clearTimeout(m._t);
+      m._t = setTimeout(() => { m.position.y = BH + 0.04; m.material[2].emissive.setHex(0); }, 110);
+    });
+  }
+
+  /* ---------- Input ---------- */
+  const alias = { backspace:'backspace', enter:'enter', tab:'tab', shift:'shift', control:'ctrl', alt:'alt', capslock:'caps' };
+  window.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey) return;
+    const k = e.key, id = alias[k.toLowerCase()] || k;
+    press(id);
+    if (k === 'Backspace') { input = input.slice(0, -1); e.preventDefault(); }
+    else if (k === 'Enter') { lines.push(PROMPT + input); run(input); input = ''; e.preventDefault(); }
+    else if (k === 'Tab') { input += '    '; e.preventDefault(); }
+    else if (k.length === 1) { input += k; if (k === ' ') e.preventDefault(); }
+    else return;
+    cursorOn = true; draw();
+  });
+  // 한글/IME 및 모바일 입력 지원
+  const kbd = document.getElementById('kbd');
+  kbd.addEventListener('compositionend', e => { input += e.data; kbd.value = ''; draw(); });
+  window.addEventListener('pointerup', () => kbd.focus({ preventScroll: true }));
+  setInterval(() => { cursorOn = !cursorOn; draw(); }, 530);
+
+  /* ---------- Orbit (drag / wheel) ---------- */
+  let rotY = -0.5, rotX = 0.45, drag = null;
+  const el = renderer.domElement;
+  el.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; el.setPointerCapture(e.pointerId); });
+  el.addEventListener('pointermove', e => {
+    if (!drag) return;
+    rotY += (e.clientX - drag.x) * 0.008;
+    rotX = Math.max(0.05, Math.min(1.3, rotX + (e.clientY - drag.y) * 0.006));
+    drag = { x: e.clientX, y: e.clientY };
+  });
+  el.addEventListener('pointerup', () => drag = null);
+  el.addEventListener('wheel', e => { camDist = Math.max(5, Math.min(16, camDist + e.deltaY * 0.01)); e.preventDefault(); }, { passive: false });
+
+  function resize() {
+    const w = innerWidth, h = innerHeight;
+    renderer.setSize(w, h); camera.aspect = w / h;
+    camera.fov = w / h < 1 ? 55 : 40; camera.updateProjectionMatrix();
+  }
+  addEventListener('resize', resize); resize();
+
+  function loop() {
+    requestAnimationFrame(loop);
+    camera.position.set(Math.sin(rotY) * Math.cos(rotX) * camDist, Math.sin(rotX) * camDist + 0.8, Math.cos(rotY) * Math.cos(rotX) * camDist);
+    camera.lookAt(0, 1.1, 0);
+    const p = new THREE.Vector3(0, 1.6, 1.6).applyEuler(new THREE.Euler(0, 0, 0));
+    glow.position.copy(p);
+    renderer.render(scene, camera);
+  }
+  draw(); loop();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  }
+}
+</script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07120f" />
+    <meta name="description" content="EOCR 보호회로의 결선, 가상 과부하 트립, 복귀 과정을 체험하는 Three.js 교육용 시뮬레이터" />
+    <title>실습 06 · EOCR 보호회로</title>
+    <script type="module">
+// src/simulator.ts
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+var palette = {
+  board: 1319967,
+  boardEdge: 2374452,
+  dark: 1056795,
+  green: 6152366,
+  amber: 16762219,
+  red: 16739170,
+  wireR: 15691883,
+  wireS: 16041566,
+  wireT: 6597119,
+  wireControl: 6740138,
+  dim: 5730664
+};
+function roundedLabel(text, options = {}) {
+  const width = options.width ?? 512;
+  const canvas2 = document.createElement("canvas");
+  canvas2.width = width;
+  canvas2.height = 128;
+  const ctx = canvas2.getContext("2d");
+  if (!ctx) throw new Error("Canvas text context is unavailable.");
+  ctx.clearRect(0, 0, canvas2.width, canvas2.height);
+  ctx.fillStyle = options.fill ?? "#10201b";
+  ctx.beginPath();
+  ctx.roundRect(8, 8, width - 16, 112, 22);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(164, 214, 195, .25)";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = options.color ?? "#e7f3ed";
+  ctx.font = '600 38px Inter, "Noto Sans KR", sans-serif';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, width / 2, 66, width - 42);
+  const texture = new THREE.CanvasTexture(canvas2);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
+  return new THREE.Mesh(new THREE.PlaneGeometry(width / 230, 0.56), material);
+}
+var EocrScene = class {
+  constructor(canvas2, onReady) {
+    this.canvas = canvas2;
+    this.onReady = onReady;
+    this.renderer = new THREE.WebGLRenderer({ canvas: canvas2, antialias: true, alpha: true, powerPreference: "high-performance" });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.15;
+    this.scene.background = new THREE.Color("#0c1714");
+    this.camera.position.set(0.2, 0.05, 11.8);
+    this.controls = new OrbitControls(this.camera, canvas2);
+    this.controls.target.set(0, 0, 0);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.065;
+    this.controls.enablePan = false;
+    this.controls.minDistance = 8.6;
+    this.controls.maxDistance = 15;
+    this.controls.maxPolarAngle = Math.PI * 0.61;
+    this.controls.minPolarAngle = Math.PI * 0.39;
+    this.scene.add(new THREE.HemisphereLight(12185815, 1187865, 2.1));
+    const keyLight = new THREE.DirectionalLight(16777215, 2.5);
+    keyLight.position.set(-3, 5, 8);
+    this.scene.add(keyLight);
+    const rimLight = new THREE.PointLight(3784595, 22, 14, 2);
+    rimLight.position.set(4, 0, 4);
+    this.scene.add(rimLight);
+    this.buildPanel();
+    this.scene.add(this.currentFlow);
+    this.buildCurrentFlowParticles();
+    this.greenLed = this.makeLed(-2.62, 0.75, 1.02, 4249762);
+    this.tripLed = this.makeLed(-2.26, 0.75, 1.02, 16735573);
+    this.contactorFace = this.makeBox(1.05, 0.53, 0.09, 3235664, -0.03, 0.05, 1);
+    this.scene.add(this.controlWires);
+    this.update(this.state);
+    this.onReady?.(true);
+    this.resize();
+    window.addEventListener("resize", this.resize);
+    this.renderer.setAnimationLoop(this.render);
+  }
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(37, 1, 0.1, 80);
+  renderer;
+  controls;
+  clock = new THREE.Clock();
+  rotor = new THREE.Group();
+  currentFlow = new THREE.Group();
+  currentPaths = [];
+  currentParticles = [];
+  greenLed;
+  tripLed;
+  contactorFace;
+  displayCanvas;
+  displayTexture;
+  controlWires = new THREE.Group();
+  state = {
+    running: false,
+    eocrTripped: false,
+    overloaded: false,
+    settingA: 4,
+    currentA: 0,
+    wiringMode: "connected"
+  };
+  update(next) {
+    this.state = { ...next };
+    this.drawControlCircuit();
+    this.updateDisplay();
+    const powerFlow = this.state.running && (!this.state.eocrTripped || this.state.wiringMode === "disconnected");
+    this.currentFlow.visible = powerFlow;
+    const flowColor = this.state.overloaded || this.state.eocrTripped ? palette.red : palette.green;
+    for (const { mesh } of this.currentParticles) {
+      const material = mesh.material;
+      material.color.setHex(flowColor);
+      material.emissive.setHex(flowColor);
+    }
+    const contactClosed = this.state.wiringMode === "connected" && !this.state.eocrTripped;
+    const greenMaterial = this.greenLed.material;
+    greenMaterial.emissiveIntensity = this.state.running && !this.state.eocrTripped ? 2.3 : 0.2;
+    const redMaterial = this.tripLed.material;
+    redMaterial.emissiveIntensity = this.state.eocrTripped ? 2.8 : 0.12;
+    const faceMaterial = this.contactorFace.material;
+    faceMaterial.color.set(this.state.running ? contactClosed ? "#3e876b" : "#f0a144" : "#315f50");
+    faceMaterial.emissive.set(this.state.running ? contactClosed ? "#174d39" : "#66320c" : "#08120e");
+    faceMaterial.emissiveIntensity = this.state.running ? 0.8 : 0.1;
+  }
+  resetCamera() {
+    this.controls.target.set(0, 0, 0);
+    this.camera.position.set(0.2, 0.05, 11.8);
+    this.controls.update();
+  }
+  dispose() {
+    this.renderer.setAnimationLoop(null);
+    this.renderer.dispose();
+    this.controls.dispose();
+    window.removeEventListener("resize", this.resize);
+    this.onReady?.(false);
+  }
+  buildPanel() {
+    const backplate = this.makeBox(8.45, 4.85, 0.28, palette.board, 0, 0, -0.25);
+    this.scene.add(backplate);
+    const inner = this.makeBox(8.1, 4.5, 0.035, palette.dark, 0, 0, -0.07);
+    this.scene.add(inner);
+    this.addCornerScrews();
+    const header = roundedLabel("EOCR \uBCF4\uD638 \uD68C\uB85C \xB7 TRAINING PANEL", { fill: "#233b33", color: "#cfe8dc" });
+    header.position.set(0, 1.95, 0.015);
+    this.scene.add(header);
+    const phaseYs = [1.42, 1.2, 0.98];
+    const phaseColors = [palette.wireR, palette.wireS, palette.wireT];
+    const phaseNames = ["R", "S", "T"];
+    phaseYs.forEach((y, i) => {
+      this.addTerminal(-3.53, y, phaseColors[i], phaseNames[i]);
+      const phasePath = [
+        [-3.37, y, 0.18],
+        [-3.05, y, 0.18],
+        [-2.95, y - 0.11, 0.18],
+        [-2.95, -0.93, 0.18],
+        [-1.42, -0.93, 0.18],
+        [-1.25, y - 0.03, 0.18],
+        [-0.83, y - 0.03, 0.18],
+        [-0.72, -0.82, 0.18],
+        [1.25, -0.82, 0.18],
+        [1.69, -0.45, 0.18]
+      ];
+      this.addCable(phasePath, phaseColors[i], 0.035);
+      this.currentPaths.push(new THREE.CatmullRomCurve3(phasePath.map(([x, y2, z]) => new THREE.Vector3(x, y2, z))));
+    });
+    const eocr = this.makeBox(1.55, 1.95, 0.64, 2312765, -2.08, 0.28, 0.28);
+    this.scene.add(eocr);
+    const eocrScreen = this.makeBox(0.92, 0.48, 0.045, 529423, -2.08, 0.29, 0.66);
+    this.scene.add(eocrScreen);
+    const screenText = this.createDisplay();
+    this.scene.add(screenText);
+    const eocrLabel = roundedLabel("EOCR \xB7 95 / 96", { fill: "#12241e", color: "#d7ede2" });
+    eocrLabel.scale.set(0.92, 0.52, 1);
+    eocrLabel.position.set(-2.08, -0.36, 0.66);
+    this.scene.add(eocrLabel);
+    this.addKnob(-2.08, -0.78, 0.69, 4958592);
+    const contactor = this.makeBox(1.58, 1.95, 0.7, 2702134, -0.05, 0.28, 0.25);
+    this.scene.add(contactor);
+    const contactorLabel = roundedLabel("\uC811\uCD09\uAE30 \xB7 KM", { fill: "#17241f", color: "#dce9e3" });
+    contactorLabel.scale.set(0.95, 0.54, 1);
+    contactorLabel.position.set(-0.05, 0.73, 0.63);
+    this.scene.add(contactorLabel);
+    const coilBadge = roundedLabel("A1  \u2500  A2", { fill: "#17241f", color: "#a4c6b7" });
+    coilBadge.scale.set(0.76, 0.48, 1);
+    coilBadge.position.set(-0.05, -0.68, 0.63);
+    this.scene.add(coilBadge);
+    this.addContactorContacts(-0.05, 0.18, 0.66);
+    const motorBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.72, 0.78, 1.28, 36, 1),
+      new THREE.MeshStandardMaterial({ color: 5402724, metalness: 0.72, roughness: 0.31 })
+    );
+    motorBody.rotation.x = Math.PI / 2;
+    motorBody.position.set(2.45, -0.48, 0.45);
+    this.scene.add(motorBody);
+    const rearRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.62, 0.055, 10, 44),
+      new THREE.MeshStandardMaterial({ color: 9283995, metalness: 0.78, roughness: 0.24 })
+    );
+    rearRing.position.set(2.45, -0.48, 1.13);
+    this.scene.add(rearRing);
+    const rotorDisk = new THREE.Mesh(
+      new THREE.CircleGeometry(0.52, 36),
+      new THREE.MeshStandardMaterial({ color: 2376248, metalness: 0.32, roughness: 0.5, side: THREE.DoubleSide })
+    );
+    this.rotor.position.set(2.45, -0.48, 1.155);
+    rotorDisk.position.set(0, 0, 0);
+    this.rotor.add(rotorDisk);
+    for (let i = 0; i < 3; i += 1) {
+      const blade = this.makeBox(0.12, 0.72, 0.035, 9099445, 0, 0, 0.015);
+      blade.rotation.z = Math.PI * 2 * i / 3;
+      this.rotor.add(blade);
+    }
+    const hub = new THREE.Mesh(new THREE.CircleGeometry(0.12, 24), new THREE.MeshStandardMaterial({ color: 12969172, metalness: 0.6, roughness: 0.25 }));
+    hub.position.set(0, 0, 0.035);
+    this.rotor.add(hub);
+    this.scene.add(this.rotor);
+    const shaft = this.makeBox(0.14, 0.14, 0.42, 10336170, 2.45, -0.48, 1.42);
+    this.scene.add(shaft);
+    const motorLabel = roundedLabel("\uBAA8\uD130 \xB7 M", { fill: "#13241e", color: "#dceee5" });
+    motorLabel.scale.set(0.9, 0.52, 1);
+    motorLabel.position.set(2.45, -1.52, 0.58);
+    this.scene.add(motorLabel);
+    this.addBottomLegend();
+    this.addBackgroundDetails();
+  }
+  buildCurrentFlowParticles() {
+    const geometry = new THREE.SphereGeometry(0.052, 12, 10);
+    this.currentPaths.forEach((_, pathIndex) => {
+      for (let particleIndex = 0; particleIndex < 4; particleIndex += 1) {
+        const material = new THREE.MeshStandardMaterial({ color: palette.green, emissive: palette.green, emissiveIntensity: 2.1, roughness: 0.25 });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = false;
+        this.currentFlow.add(mesh);
+        this.currentParticles.push({ mesh, pathIndex, offset: particleIndex / 4 });
+      }
+    });
+  }
+  addCornerScrews() {
+    for (const x of [-4.05, 4.05]) {
+      for (const y of [-2.25, 2.25]) {
+        const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.025, 18), new THREE.MeshStandardMaterial({ color: 7704965, metalness: 0.8, roughness: 0.25 }));
+        screw.rotation.x = Math.PI / 2;
+        screw.position.set(x, y, -0.055);
+        this.scene.add(screw);
+      }
+    }
+  }
+  addTerminal(x, y, color, label) {
+    const block = this.makeBox(0.26, 0.24, 0.2, 2110766, x, y, 0.21);
+    this.scene.add(block);
+    const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.035, 16), new THREE.MeshStandardMaterial({ color: 11256247, metalness: 0.85, roughness: 0.2 }));
+    screw.rotation.x = Math.PI / 2;
+    screw.position.set(x, y, 0.33);
+    this.scene.add(screw);
+    const tag = roundedLabel(label, { fill: "#16241f", color: `#${color.toString(16).padStart(6, "0")}`, width: 170 });
+    tag.scale.set(0.25, 0.26, 1);
+    tag.position.set(x, y + 0.21, 0.34);
+    this.scene.add(tag);
+  }
+  addKnob(x, y, z, color) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.035, 10, 24), new THREE.MeshStandardMaterial({ color: 10007719, metalness: 0.72, roughness: 0.3 }));
+    ring.position.set(x, y, z);
+    this.scene.add(ring);
+    const center = new THREE.Mesh(new THREE.CircleGeometry(0.115, 24), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.16 }));
+    center.position.set(x, y, z + 0.012);
+    this.scene.add(center);
+    const pointer = this.makeBox(0.025, 0.12, 0.025, 14873834, x, y + 0.035, z + 0.03);
+    this.scene.add(pointer);
+  }
+  addContactorContacts(x, y, z) {
+    for (let i = 0; i < 3; i += 1) {
+      const contact = this.makeBox(0.19, 0.38, 0.04, 10336940, x - 0.48 + i * 0.48, y, z);
+      this.scene.add(contact);
+      const terminal = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.025, 14), new THREE.MeshStandardMaterial({ color: 14149341, metalness: 0.8, roughness: 0.2 }));
+      terminal.rotation.x = Math.PI / 2;
+      terminal.position.set(x - 0.48 + i * 0.48, y + 0.25, z + 0.03);
+      this.scene.add(terminal);
+    }
+  }
+  addBottomLegend() {
+    const labels = [
+      { text: "L  \uC81C\uC5B4\uC804\uC6D0", x: -3.08 },
+      { text: "\uC815\uC9C0 NC", x: -1.98 },
+      { text: "EOCR 95\u201396", x: -0.55 },
+      { text: "KM \uCF54\uC77C", x: 1 },
+      { text: "N", x: 3.02 }
+    ];
+    labels.forEach(({ text, x }) => {
+      const tag = roundedLabel(text, { fill: "#172a23", color: "#c1d9cc", width: 300 });
+      tag.scale.set(0.78, 0.38, 1);
+      tag.position.set(x, -1.77, 0.04);
+      this.scene.add(tag);
+    });
+  }
+  addBackgroundDetails() {
+    for (let i = 0; i < 18; i += 1) {
+      const line = this.makeBox(0.025, 0.16, 0.018, 3494472, -3.72 + i * 0.43, 1.9, 5e-3);
+      this.scene.add(line);
+    }
+    const edge = this.makeBox(7.92, 0.018, 0.025, 3561034, 0, -2.06, 0.02);
+    this.scene.add(edge);
+  }
+  makeLed(x, y, z, color) {
+    const led = new THREE.Mesh(
+      new THREE.SphereGeometry(0.085, 18, 12),
+      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.12, roughness: 0.22 })
+    );
+    led.position.set(x, y, z);
+    this.scene.add(led);
+    return led;
+  }
+  drawControlCircuit() {
+    for (const child of this.controlWires.children) {
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose();
+        if (Array.isArray(child.material)) child.material.forEach((material) => material.dispose());
+        else child.material.dispose();
+      }
+    }
+    this.controlWires.clear();
+    const controlColor = this.state.running ? this.state.eocrTripped && this.state.wiringMode === "disconnected" ? palette.red : palette.wireControl : palette.dim;
+    this.addCable([[-3.58, -1.25, 0.42], [-2.56, -1.25, 0.42], [-2.4, -1.39, 0.42]], controlColor, 0.045, this.controlWires);
+    if (this.state.wiringMode === "connected") {
+      if (!this.state.eocrTripped) {
+        this.addCable([[-2.4, -1.39, 0.42], [-1.66, -1.39, 0.42], [-1.45, -1.25, 0.42], [-0.08, -1.25, 0.42], [0.45, -1.25, 0.42], [2.95, -1.25, 0.42]], controlColor, 0.045, this.controlWires);
+      } else {
+        this.addCable([[-2.4, -1.39, 0.42], [-2.18, -1.39, 0.42]], palette.red, 0.045, this.controlWires);
+        this.addCable([[-1.78, -1.39, 0.42], [-1.45, -1.25, 0.42]], palette.dim, 0.035, this.controlWires);
+        this.addCable([[-1.98, -1.58, 0.42], [-1.98, -1.78, 0.42]], palette.red, 0.035, this.controlWires);
+      }
+    } else {
+      this.addCable([[-2.4, -1.39, 0.42], [-2.16, -1.39, 0.42]], palette.red, 0.04, this.controlWires);
+      this.addCable([[-1.78, -1.39, 0.42], [-1.45, -1.25, 0.42], [-0.08, -1.25, 0.42], [0.45, -1.25, 0.42], [2.95, -1.25, 0.42]], controlColor, 0.045, this.controlWires);
+    }
+  }
+  addCable(points, color, radius = 0.035, group = this.scene) {
+    const curve = new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+    const geometry = new THREE.TubeGeometry(curve, Math.max(18, points.length * 10), radius, 7, false);
+    const material = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.26, roughness: 0.42, metalness: 0.08 });
+    group.add(new THREE.Mesh(geometry, material));
+  }
+  createDisplay() {
+    this.displayCanvas = document.createElement("canvas");
+    this.displayCanvas.width = 360;
+    this.displayCanvas.height = 128;
+    this.displayTexture = new THREE.CanvasTexture(this.displayCanvas);
+    this.displayTexture.colorSpace = THREE.SRGBColorSpace;
+    const display = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.92, 0.48),
+      new THREE.MeshBasicMaterial({ map: this.displayTexture })
+    );
+    display.position.set(-2.08, 0.3, 0.693);
+    this.updateDisplay();
+    return display;
+  }
+  updateDisplay() {
+    const context = this.displayCanvas?.getContext("2d");
+    if (!context || !this.displayTexture) return;
+    context.fillStyle = "#081a12";
+    context.fillRect(0, 0, this.displayCanvas.width, this.displayCanvas.height);
+    context.strokeStyle = "rgba(105, 210, 159, .45)";
+    context.lineWidth = 4;
+    context.strokeRect(5, 5, this.displayCanvas.width - 10, this.displayCanvas.height - 10);
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.font = '500 25px "DM Mono", monospace';
+    context.fillStyle = "#6eab8c";
+    context.fillText(this.state.eocrTripped ? "TRIP" : "SET POINT", 180, 39);
+    context.font = '600 45px "DM Mono", monospace';
+    context.fillStyle = this.state.eocrTripped ? "#ff7770" : "#96f2c2";
+    context.fillText(this.state.eocrTripped ? "ALARM" : `${this.state.settingA.toFixed(1)} A`, 180, 88);
+    this.displayTexture.needsUpdate = true;
+  }
+  makeBox(width, height, depth, color, x, y, z) {
+    return new THREE.Mesh(
+      new THREE.BoxGeometry(width, height, depth),
+      new THREE.MeshStandardMaterial({ color, metalness: 0.2, roughness: 0.47 })
+    ).translateX(x).translateY(y).translateZ(z);
+  }
+  resize = () => {
+    const bounds = this.canvas.getBoundingClientRect();
+    if (bounds.width < 1 || bounds.height < 1) return;
+    this.renderer.setSize(bounds.width, bounds.height, false);
+    this.camera.aspect = bounds.width / bounds.height;
+    this.camera.updateProjectionMatrix();
+  };
+  render = () => {
+    const delta = Math.min(this.clock.getDelta(), 0.05);
+    if (this.state.running) this.rotor.rotation.z += delta * (this.state.overloaded ? 6.5 : 3.4);
+    const powerFlow = this.state.running && (!this.state.eocrTripped || this.state.wiringMode === "disconnected");
+    const flowTime = this.clock.elapsedTime * (this.state.overloaded ? 0.48 : 0.3);
+    for (const { mesh, pathIndex, offset } of this.currentParticles) {
+      mesh.visible = powerFlow;
+      if (powerFlow) mesh.position.copy(this.currentPaths[pathIndex].getPointAt((flowTime + offset) % 1));
+    }
+    this.contactorFace.position.y = this.state.running ? 0.02 : 0.05;
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+  };
+};
+
+// src/main.ts
+var app = document.querySelector("#app");
+if (!app) throw new Error("Application root was not found.");
+app.innerHTML = `
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="\uC2E4\uC2B5 6 \uCC98\uC74C\uC73C\uB85C">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="brand-copy"><strong>FIELD LAB</strong><small>\uC804\uAE30\uC81C\uC5B4 \uC2E4\uC2B5\uC2E4</small></span>
+      </a>
+      <div class="topbar-center"><span class="live-dot"></span> \uBE0C\uB77C\uC6B0\uC800 \uC2DC\uBBAC\uB808\uC774\uC158 <span class="topbar-divider">/</span> \uC7A5\uBE44 \uC5F0\uACB0 \uC5C6\uC74C</div>
+      <div class="lesson-chip"><span>\uC2E4\uC2B5</span><strong>06</strong><span class="chip-line"></span><span>\uBCF4\uD638 \uACC4\uC804</span></div>
+    </header>
+
+    <main id="top">
+      <section class="hero-row">
+        <div>
+          <p class="eyebrow"><span>MODULE 06</span><span class="eyebrow-rule"></span><span>OVER-CURRENT PROTECTION</span></p>
+          <h1>\uACFC\uBD80\uD558\uB97C \uAC10\uC9C0\uD558\uACE0,<br /><em>\uC81C\uC5B4\uD68C\uB85C\uB97C \uB04A\uB2E4.</em></h1>
+          <p class="hero-description">EOCR \uC811\uC810 \uACB0\uC120\uBD80\uD130 \uD2B8\uB9BD\xB7\uBCF5\uADC0\uAE4C\uC9C0. \uC548\uC804\uD55C \uAC00\uC0C1 \uD68C\uB85C\uC5D0\uC11C \uBCF4\uD638 \uB3D9\uC791\uC744 \uC9C1\uC811 \uD655\uC778\uD569\uB2C8\uB2E4.</p>
+        </div>
+        <div class="hero-note"><span class="note-index">TODAY\u2019S FOCUS</span><strong>\uBCF4\uD638 \uC811\uC810 \xB7 \uD2B8\uB9BD \uC804\uB958 \xB7 \uBCF5\uADC0</strong><span>\uBAA8\uC758\uAC12\uC740 \uD559\uC2B5\uC6A9\uC785\uB2C8\uB2E4. \uC2E4\uC81C \uC7A5\uBE44\uB294 \uBA85\uD310\uACFC \uC81C\uC870\uC0AC \uC9C0\uCE68\uC744 \uB530\uB974\uC138\uC694.</span></div>
+      </section>
+
+      <section class="workbench-layout" aria-label="EOCR \uC2E4\uC2B5 \uC791\uC5C5\uB300">
+        <article class="scene-card">
+          <div class="scene-card-head">
+            <div><span class="micro-label">01 / PANEL VIEW</span><h2>\uC81C\uC5B4\uBC18\uC744 \uC0B4\uD3B4\uBCF4\uC138\uC694</h2></div>
+            <div class="scene-head-right"><span id="sceneState" class="scene-state"><i></i> \uC804\uC6D0 \uCC28\uB2E8</span><button id="resetView" class="icon-button" type="button" aria-label="3D \uC2DC\uC810 \uCD08\uAE30\uD654" title="\uC2DC\uC810 \uCD08\uAE30\uD654">\u21BA</button></div>
+          </div>
+          <div class="scene-wrap">
+            <canvas id="panelCanvas" aria-label="EOCR, \uC811\uCD09\uAE30, \uBAA8\uD130\uAC00 \uBC30\uCE58\uB41C 3D \uC81C\uC5B4\uBC18. \uB4DC\uB798\uADF8\uD558\uC5EC \uD68C\uC804\uD558\uACE0 \uD720\uB85C \uD655\uB300\uD558\uC138\uC694."></canvas>
+            <div class="scene-stamp"><span class="stamp-cross">\uFF0B</span><span>3D INTERACTIVE PANEL</span></div>
+            <div class="scene-caption"><span class="caption-line"></span><span>\uB4DC\uB798\uADF8\uD558\uC5EC \uD68C\uC804 <b>\xB7</b> \uD720\uB85C \uD655\uB300</span></div>
+            <div class="scene-readout"><span class="readout-label">\uBAA8\uC758 \uBD80\uD558\uC804\uB958</span><strong id="sceneCurrent">\u2014.-<small> A</small></strong></div>
+            <div class="component-tags" aria-hidden="true"><span class="tag-eocr">EOCR</span><span class="tag-km">KM</span><span class="tag-motor">M</span></div>
+          </div>
+          <div class="scene-legend"><span><i class="legend-dot green"></i>\uC815\uC0C1 \uC81C\uC5B4 \uACBD\uB85C</span><span><i class="legend-dot red"></i>\uD2B8\uB9BD / \uC704\uD5D8 \uC0C1\uD0DC</span><span class="legend-phases"><b>R</b><b>S</b><b>T</b> 3\uC0C1 \uC804\uC6D0</span></div>
+        </article>
+
+        <aside class="control-card" aria-label="\uC2DC\uBBAC\uB808\uC774\uD130 \uC870\uC791">
+          <div class="control-card-top"><span class="micro-label">02 / CONTROL DESK</span><span class="sim-only">SIM ONLY</span></div>
+          <div class="control-heading"><h2>\uC2E4\uC2B5 \uC870\uC791</h2><span id="stateTag" class="state-tag">\uB300\uAE30</span></div>
+          <p class="control-intro">\uC870\uAC74\uC744 \uBC14\uAFB8\uACE0 \uB3D9\uC791 \uACB0\uACFC\uB97C \uD655\uC778\uD558\uC138\uC694.</p>
+
+          <div class="setting-block">
+            <div class="setting-title"><label for="currentSetting">EOCR \uC124\uC815 \uC804\uB958 <span class="subtle">(\uBAA8\uC758)</span></label><span class="setting-value"><b id="settingValue">4.0</b><small> A</small></span></div>
+            <input id="currentSetting" type="range" min="2" max="8" step="0.1" value="4" aria-label="\uBAA8\uC758 EOCR \uC124\uC815 \uC804\uB958" />
+            <div class="range-labels"><span>2.0 A</span><span class="range-reference">\uBAA8\uC758 \uC815\uACA9 4.0 A</span><span>8.0 A</span></div>
+            <div class="preset-row"><button id="ratedPreset" type="button" class="preset-button">\uC815\uACA9\uC5D0 \uB9DE\uCDA4 <b>4.0 A</b></button><button id="highPreset" type="button" class="preset-button warning-preset">\uC124\uC815 \uACFC\uB300 <b>8.0 A</b></button></div>
+          </div>
+
+          <div class="wiring-block">
+            <label for="wiringMode">\uBCF4\uD638 \uC811\uC810 \uACB0\uC120</label>
+            <div class="select-wrap"><select id="wiringMode"><option value="connected">\uC815\uC0C1 \uACB0\uC120 \xB7 95\u201396 \uC9C1\uB82C \uC5F0\uACB0</option><option value="disconnected">\uC624\uB958 \uCCB4\uD5D8 \xB7 \uBCF4\uD638 \uC811\uC810 \uBBF8\uC5F0\uACB0</option></select><span class="select-chevron">\u2304</span></div>
+          </div>
+
+          <div class="action-row">
+            <button id="startButton" class="primary-button" type="button"><span class="button-icon">\u25B6</span> \uAE30\uB3D9</button>
+            <button id="stopButton" class="secondary-button" type="button" disabled><span class="button-icon">\u25A0</span> \uC815\uC9C0</button>
+          </div>
+          <button id="overloadButton" class="overload-button" type="button" disabled><span class="pulse-icon">\u2197</span><span><b>\uAC00\uC0C1 \uACFC\uBD80\uD558 \uC778\uAC00</b><small>\uBAA8\uC758 \uC804\uB958\uB97C 6.6 A\uB85C \uC62C\uB9BD\uB2C8\uB2E4</small></span><span class="button-arrow">\u2192</span></button>
+          <button id="resetButton" class="reset-button" type="button" disabled><span>\u21BB</span> \uC6D0\uC778 \uD655\uC778 \uD6C4 EOCR \uBCF5\uADC0</button>
+
+          <div id="messageBox" class="message-box" data-tone="neutral" role="status" aria-live="polite">
+            <span id="messageIcon" class="message-icon">i</span><div><strong id="messageTitle">\uC2E4\uC2B5 \uC900\uBE44 \uC644\uB8CC</strong><p id="messageText">\uC811\uC810 \uACB0\uC120\uACFC \uC124\uC815\uAC12\uC744 \uD655\uC778\uD558\uACE0 \uAE30\uB3D9\uD558\uC138\uC694.</p></div>
+          </div>
+          <div class="current-meter" aria-label="\uBAA8\uC758 \uBD80\uD558\uC804\uB958 \uD45C\uC2DC"><div class="meter-heading"><span>LOAD CURRENT</span><span id="currentStatus">\uB300\uAE30</span></div><div class="meter-track"><span id="currentMeterFill"></span><i class="meter-marker" title="\uBAA8\uC758 \uC815\uACA9 4.0 A"></i></div><div class="meter-values"><span>0</span><strong id="currentValue">0.0 <small>A</small></strong><span>8 A</span></div></div>
+        </aside>
+      </section>
+
+      <section class="diagram-section" aria-labelledby="diagramTitle">
+        <div class="section-head"><div><span class="micro-label">03 / WIRING LOGIC</span><h2 id="diagramTitle">\uD68C\uB85C\uC5D0\uC11C \uB04A\uAE30\uB294 \uC9C0\uC810\uC744 \uD655\uC778\uD558\uC138\uC694</h2></div><span class="diagram-legend"><i></i>\uC6C0\uC9C1\uC774\uB294 \uC120 \xB7 \uC804\uB958 \uD750\uB984</span></div>
+        <div class="diagram-frame">
+          <svg id="circuitDiagram" class="circuit-svg" viewBox="0 0 1080 310" role="img" aria-label="3\uC0C1 \uC8FC\uD68C\uB85C\uB294 EOCR\uACFC \uC811\uCD09\uAE30\uB97C \uAC70\uCCD0 \uBAA8\uD130\uC5D0 \uC5F0\uACB0\uB418\uACE0, \uC81C\uC5B4\uD68C\uB85C\uB294 \uC815\uC9C0 \uC811\uC810\uACFC EOCR 95-96 \uC811\uC810\uC744 \uC9C1\uB82C\uB85C \uAC70\uCCD0 \uC811\uCD09\uAE30 \uCF54\uC77C\uC5D0 \uC5F0\uACB0\uB418\uB294 \uD68C\uB85C\uB3C4">
+            <text x="34" y="31" class="svg-overline">MAIN CIRCUIT</text><text x="1044" y="31" text-anchor="end" class="svg-overline">3\uC0C1 \uC8FC\uD68C\uB85C \xB7 R / S / T</text>
+            <g class="power-wires">
+              <path class="phase-r" d="M105 82 H258 M430 82 H510 M675 82 H817"/><path class="phase-s" d="M105 98 H258 M430 98 H510 M675 98 H817"/><path class="phase-t" d="M105 114 H258 M430 114 H510 M675 114 H817"/>
+            </g>
+            <circle cx="78" cy="98" r="23" class="source-node"/><text x="78" y="103" text-anchor="middle" class="svg-source">3~</text><text x="78" y="147" text-anchor="middle" class="svg-small">\uC804\uC6D0</text>
+            <rect x="258" y="54" width="172" height="88" rx="12" class="diagram-module eocr-module"/><text x="344" y="91" text-anchor="middle" class="svg-module">EOCR</text><text x="344" y="116" text-anchor="middle" class="svg-small">\uACFC\uC804\uB958 \uAC80\uCD9C</text>
+            <rect x="510" y="54" width="165" height="88" rx="12" class="diagram-module km-module"/><text x="592" y="91" text-anchor="middle" class="svg-module">KM</text><text x="592" y="116" text-anchor="middle" class="svg-small">\uC811\uCD09\uAE30 \uC8FC\uC811\uC810</text>
+            <circle cx="863" cy="98" r="44" class="motor-node"/><circle cx="863" cy="98" r="25" class="motor-core"/><path d="M863 78v40M843 98h40" class="motor-cross"/><text x="932" y="104" class="svg-module">M</text><text x="863" y="161" text-anchor="middle" class="svg-small">\uBAA8\uD130</text>
+
+            <line x1="34" y1="183" x2="1046" y2="183" class="diagram-divider"/>
+            <text x="34" y="210" class="svg-overline">CONTROL CIRCUIT</text><text x="1044" y="210" text-anchor="end" class="svg-small">L \u2014 \uC815\uC9C0 NC \u2014 EOCR 95\xB796 NC \u2014 KM \uCF54\uC77C \u2014 N</text>
+            <path class="control-segment" data-segment="supply" d="M86 256 H145"/><path class="control-segment" data-segment="stop" d="M214 256 H336"/><path id="contactBefore" class="control-segment" data-segment="before" d="M336 256 H390"/>
+            <path id="contactAfter" class="control-segment" data-segment="after" d="M445 256 H650"/><path class="control-segment" data-segment="coil" d="M710 256 H950"/>
+            <circle cx="66" cy="256" r="20" class="control-node"/><text x="66" y="261" text-anchor="middle" class="svg-source">L</text>
+            <rect x="145" y="237" width="69" height="38" rx="5" class="control-contact"/><path d="M154 256h18l17-12m10 12h7" class="contact-symbol"/><text x="180" y="296" text-anchor="middle" class="svg-small">\uC815\uC9C0 NC</text>
+            <rect x="390" y="237" width="55" height="38" rx="5" class="eocr-contact"/><path id="eocrContactSymbol" d="M398 256h12l17-12m8 12h3" class="contact-symbol"/><text x="418" y="296" text-anchor="middle" class="svg-small">95\u201396 NC</text>
+            <g class="fault-callout"><rect x="728" y="220" width="300" height="22" rx="5" class="fault-callout-box"/><text x="878" y="235" text-anchor="middle" class="fault-callout-text">\uC624\uB958 \uCCB4\uD5D8 \xB7 EOCR 95\u201396 \uBCF4\uD638 \uC811\uC810 \uBBF8\uC5F0\uACB0</text></g>
+            <circle cx="680" cy="256" r="30" class="coil-node"/><text x="680" y="261" text-anchor="middle" class="coil-label">KM</text><text x="680" y="296" text-anchor="middle" class="svg-small">\uCF54\uC77C A1/A2</text>
+            <circle cx="979" cy="256" r="20" class="control-node"/><text x="979" y="261" text-anchor="middle" class="svg-source">N</text>
+            <circle id="diagramLed" cx="523" cy="232" r="5" class="diagram-led"/>
+          </svg>
+        </div>
+      </section>
+
+      <section class="learning-grid">
+        <article class="steps-card"><div class="section-head compact"><div><span class="micro-label">04 / PRACTICE FLOW</span><h2>\uC2E4\uC2B5 \uC21C\uC11C</h2></div><span class="completion-count"><b id="completeCount">0</b> / 4</span></div>
+          <ol class="practice-steps"><li data-step="wiring"><span class="step-number">01</span><span><b>\uC811\uC810 \uACB0\uC120 \uD655\uC778</b><small>95\u201396 \uC811\uC810\uC774 \uCF54\uC77C \uACBD\uB85C\uC5D0 \uC9C1\uB82C\uC778\uC9C0 \uBD05\uB2C8\uB2E4.</small></span><i class="step-check">\u2713</i></li><li data-step="setting"><span class="step-number">02</span><span><b>\uC124\uC815 \uC804\uB958 \uD655\uC778</b><small>\uC608\uC2DC \uBAA8\uC758 \uC815\uACA9\uC740 4.0 A\uC785\uB2C8\uB2E4.</small></span><i class="step-check">\u2713</i></li><li data-step="trip"><span class="step-number">03</span><span><b>\uAC00\uC0C1 \uD2B8\uB9BD \uC2DC\uD5D8</b><small>\uAE30\uB3D9\uD55C \uB4A4 \uACFC\uBD80\uD558\uB97C \uC778\uAC00\uD569\uB2C8\uB2E4.</small></span><i class="step-check">\u2713</i></li><li data-step="reset"><span class="step-number">04</span><span><b>\uC6D0\uC778 \uC81C\uAC70 \uD6C4 \uBCF5\uADC0</b><small>\uC815\uC9C0 \uC0C1\uD0DC\uC5D0\uC11C EOCR\uC744 \uBCF5\uADC0\uD569\uB2C8\uB2E4.</small></span><i class="step-check">\u2713</i></li></ol>
+        </article>
+        <article class="check-card"><span class="micro-label">CHECK BEFORE RESET</span><h2>\uBCF5\uADC0 \uC804, \uBA3C\uC800 \uD655\uC778</h2><div class="check-line"><span>01</span><p>\uACFC\uBD80\uD558 \uC6D0\uC778\uC744 \uC81C\uAC70\uD588\uB098\uC694?</p><i>\u25A1</i></div><div class="check-line"><span>02</span><p>\uC811\uC810 \uBC30\uC120\uACFC \uB2E8\uC790 \uCCB4\uACB0\uC744 \uC810\uAC80\uD588\uB098\uC694?</p><i>\u25A1</i></div><div class="check-line"><span>03</span><p>\uC124\uC815\uAC12\uC774 \uC7A5\uBE44 \uAE30\uC900\uC5D0 \uB9DE\uB098\uC694?</p><i>\u25A1</i></div><p class="safety-note"><span>!</span> \uC2E4\uC81C \uACB0\uC120 \uC810\uAC80\uC740 \uC804\uC6D0 \uCC28\uB2E8 \uD6C4 \uC2E4\uC2DC\uD558\uC138\uC694. \uC774 \uD654\uBA74\uC740 \uBAA8\uC758 \uC2E4\uC2B5\uC785\uB2C8\uB2E4.</p></article>
+      </section>
+    </main>
+    <footer class="footer"><span>FIELD LAB <i>\xB7</i> \uC804\uAE30\uC81C\uC5B4 \uC2E4\uC2B5 06</span><span>\uC2E4\uC81C \uC7A5\uBE44\uC640 \uBD84\uB9AC\uB41C \uBE0C\uB77C\uC6B0\uC800 \uC2DC\uBBAC\uB808\uC774\uC158</span></footer>
+  </div>
+`;
+var canvas = document.querySelector("#panelCanvas");
+var scene = new EocrScene(canvas);
+var settingInput = document.querySelector("#currentSetting");
+var currentValue = document.querySelector("#currentValue");
+var sceneCurrent = document.querySelector("#sceneCurrent");
+var meterFill = document.querySelector("#currentMeterFill");
+var messageBox = document.querySelector("#messageBox");
+var messageTitle = document.querySelector("#messageTitle");
+var messageText = document.querySelector("#messageText");
+var stateTag = document.querySelector("#stateTag");
+var sceneState = document.querySelector("#sceneState");
+var currentStatus = document.querySelector("#currentStatus");
+var startButton = document.querySelector("#startButton");
+var stopButton = document.querySelector("#stopButton");
+var overloadButton = document.querySelector("#overloadButton");
+var resetButton = document.querySelector("#resetButton");
+var wiringSelect = document.querySelector("#wiringMode");
+var NOMINAL_A = 4;
+var NORMAL_A = 3.4;
+var OVERLOAD_A = 6.6;
+var settingA = 4;
+var wiringMode = "connected";
+var running = false;
+var eocrTripped = false;
+var overloaded = false;
+var hasRun = false;
+var hasTripped = false;
+var hasReset = false;
+var messageTone = "neutral";
+var messageHeading = "\uC2E4\uC2B5 \uC900\uBE44 \uC644\uB8CC";
+var messageBody = "\uC811\uC810 \uACB0\uC120\uACFC \uC124\uC815\uAC12\uC744 \uD655\uC778\uD558\uACE0 \uAE30\uB3D9\uD558\uC138\uC694.";
+function updateMessage(title, body, tone) {
+  messageHeading = title;
+  messageBody = body;
+  messageTone = tone;
+}
+function getCurrent() {
+  return running ? overloaded ? OVERLOAD_A : NORMAL_A : 0;
+}
+function refresh() {
+  const current = getCurrent();
+  const state = { running, eocrTripped, overloaded, settingA, currentA: current, wiringMode };
+  scene.update(state);
+  document.querySelector("#settingValue").textContent = settingA.toFixed(1);
+  document.querySelector("#settingValue").closest(".setting-value").classList.toggle("setting-high", settingA > OVERLOAD_A);
+  currentValue.innerHTML = `${current.toFixed(1)} <small>A</small>`;
+  sceneCurrent.innerHTML = `${current.toFixed(1)}<small> A</small>`;
+  meterFill.style.width = `${Math.min(current / 8, 1) * 100}%`;
+  meterFill.classList.toggle("meter-danger", current > NOMINAL_A);
+  document.querySelector("#messageIcon").textContent = messageTone === "good" ? "\u2713" : messageTone === "warning" ? "!" : messageTone === "danger" ? "\xD7" : "i";
+  messageBox.dataset.tone = messageTone;
+  messageTitle.textContent = messageHeading;
+  messageText.textContent = messageBody;
+  const risk = running && overloaded || running && eocrTripped;
+  const stateText = eocrTripped && !running ? "\uD2B8\uB9BD \uB798\uCE58" : risk ? "\uBCF4\uD638 \uBBF8\uCC28\uB2E8" : running ? overloaded ? "\uACFC\uBD80\uD558" : "\uC815\uC0C1 \uC6B4\uC804" : "\uB300\uAE30";
+  stateTag.textContent = stateText;
+  stateTag.className = `state-tag ${risk ? "is-danger" : eocrTripped ? "is-warning" : running ? "is-running" : ""}`;
+  sceneState.innerHTML = `<i></i> ${stateText}`;
+  sceneState.className = `scene-state ${risk ? "is-danger" : eocrTripped ? "is-warning" : running ? "is-running" : ""}`;
+  currentStatus.textContent = risk ? "\uC8FC\uC758 \uD544\uC694" : running ? "\uC6B4\uC804 \uC911" : "\uC815\uC9C0";
+  startButton.disabled = running || eocrTripped;
+  stopButton.disabled = !running;
+  overloadButton.disabled = !running || overloaded;
+  resetButton.disabled = !eocrTripped || running;
+  settingInput.disabled = running;
+  wiringSelect.disabled = running;
+  document.querySelector("#circuitDiagram").dataset.wiring = wiringMode;
+  document.querySelector("#circuitDiagram").dataset.energized = String(running);
+  document.querySelector("#circuitDiagram").dataset.tripped = String(eocrTripped);
+  document.querySelector("#diagramLed").classList.toggle("led-on", running && !eocrTripped);
+  document.querySelector("#diagramLed").classList.toggle("led-trip", eocrTripped);
+  document.querySelector("#eocrContactSymbol").classList.toggle("contact-open", eocrTripped && wiringMode === "connected");
+  const stepProgress = [
+    { selector: '[data-step="wiring"]', complete: wiringMode === "connected" },
+    { selector: '[data-step="setting"]', complete: Math.abs(settingA - NOMINAL_A) < 0.05 },
+    { selector: '[data-step="trip"]', complete: hasRun && hasTripped },
+    { selector: '[data-step="reset"]', complete: hasReset }
+  ];
+  stepProgress.forEach(({ selector, complete }) => {
+    const step = document.querySelector(selector);
+    step.classList.toggle("is-complete", complete);
+    step.querySelector(".step-check").textContent = complete ? "\u2713" : "\u25CB";
+  });
+  document.querySelector("#completeCount").textContent = String(stepProgress.filter(({ complete }) => complete).length);
+  document.querySelector("#ratedPreset").classList.toggle("is-selected", Math.abs(settingA - NOMINAL_A) < 0.05);
+  document.querySelector("#highPreset").classList.toggle("is-selected", Math.abs(settingA - 8) < 0.05);
+}
+startButton.addEventListener("click", () => {
+  if (eocrTripped) return;
+  hasRun = true;
+  overloaded = false;
+  if (settingA <= NORMAL_A) {
+    running = false;
+    eocrTripped = true;
+    hasTripped = true;
+    updateMessage("\uC124\uC815\uAC12\uC774 \uB0AE\uC544 \uBD88\uD544\uC694 \uD2B8\uB9BD", `\uC815\uC0C1 \uBAA8\uC758 \uC6B4\uC804\uC804\uB958 ${NORMAL_A.toFixed(1)} A\uAC00 \uC124\uC815 ${settingA.toFixed(1)} A\uB97C \uB118\uC5C8\uC2B5\uB2C8\uB2E4. \uC815\uACA9 \uC608\uC2DC\uAC12\uC73C\uB85C \uC870\uC815\uD55C \uB4A4 \uBCF5\uADC0\uD558\uC138\uC694.`, "warning");
+  } else {
+    running = true;
+    updateMessage("\uC815\uC0C1 \uC6B4\uC804 \uC911", `\uBAA8\uC758 \uC804\uB958 ${NORMAL_A.toFixed(1)} A. \uAC00\uC0C1 \uACFC\uBD80\uD558\uB97C \uC778\uAC00\uD574 EOCR \uB3D9\uC791\uC744 \uD655\uC778\uD558\uC138\uC694.`, "good");
+  }
+  refresh();
+});
+stopButton.addEventListener("click", () => {
+  running = false;
+  overloaded = false;
+  if (eocrTripped) {
+    updateMessage("\uBAA8\uD130 \uC815\uC9C0 \uD655\uC778", "\uC81C\uC5B4\uD68C\uB85C\uC758 \uC815\uC9C0 \uC870\uC791\uC73C\uB85C \uBAA8\uD130\uAC00 \uBA48\uCDC4\uC2B5\uB2C8\uB2E4. \uC811\uC810 \uACB0\uC120 \uC624\uB958\uC640 \uACFC\uBD80\uD558 \uC6D0\uC778\uC744 \uD655\uC778\uD558\uC138\uC694.", "warning");
+  } else {
+    updateMessage("\uC815\uC9C0 \uC644\uB8CC", "\uBAA8\uC758 \uBAA8\uD130\uAC00 \uC815\uC9C0\uD588\uC2B5\uB2C8\uB2E4. \uC124\uC815\uC774\uB098 \uACB0\uC120 \uC870\uAC74\uC744 \uBC14\uAFC0 \uC218 \uC788\uC2B5\uB2C8\uB2E4.", "neutral");
+  }
+  refresh();
+});
+overloadButton.addEventListener("click", () => {
+  if (!running) return;
+  overloaded = true;
+  hasTripped = true;
+  if (OVERLOAD_A > settingA) {
+    eocrTripped = true;
+    if (wiringMode === "connected") {
+      running = false;
+      overloaded = false;
+      updateMessage("EOCR \uACFC\uBD80\uD558 \uD2B8\uB9BD", `${OVERLOAD_A.toFixed(1)} A\uC5D0\uC11C 95\u201396 \uC811\uC810\uC774 \uC5F4\uB824 KM \uCF54\uC77C\uC744 \uCC28\uB2E8\uD588\uC2B5\uB2C8\uB2E4. \uBAA8\uD130 \uC815\uC9C0\uB97C \uD655\uC778\uD588\uC2B5\uB2C8\uB2E4.`, "good");
+    } else {
+      updateMessage("\uC811\uC810 \uBBF8\uC5F0\uACB0 \xB7 \uBCF4\uD638 \uC2E4\uD328", `EOCR\uC740 ${OVERLOAD_A.toFixed(1)} A\uC5D0\uC11C \uD2B8\uB9BD\uD588\uC9C0\uB9CC, 95\u201396 \uC811\uC810\uC774 \uCF54\uC77C \uACBD\uB85C\uC5D0 \uC5C6\uC5B4 \uBAA8\uD130\uAC00 \uACC4\uC18D \uC6B4\uC804\uD569\uB2C8\uB2E4. \uC989\uC2DC \uC815\uC9C0\uD558\uACE0 \uACB0\uC120\uC744 \uC810\uAC80\uD558\uC138\uC694.`, "danger");
+    }
+  } else {
+    eocrTripped = false;
+    updateMessage("\uC124\uC815 \uC804\uB958 \uACFC\uB300 \xB7 \uD2B8\uB9BD \uC548 \uB428", `\uBAA8\uC758 \uC804\uB958 ${OVERLOAD_A.toFixed(1)} A\uAC00 \uC124\uC815 ${settingA.toFixed(1)} A\uBCF4\uB2E4 \uB0AE\uC544 \uCC28\uB2E8\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4. \uC815\uC9C0 \uD6C4 \uC7A5\uBE44 \uAE30\uC900\uC73C\uB85C \uC870\uC815\uD558\uC138\uC694.`, "danger");
+  }
+  refresh();
+});
+resetButton.addEventListener("click", () => {
+  if (!eocrTripped) return;
+  if (running) {
+    updateMessage("\uBA3C\uC800 \uC815\uC9C0\uD558\uC138\uC694", "\uBAA8\uD130\uAC00 \uACC4\uC18D \uC6B4\uC804 \uC911\uC785\uB2C8\uB2E4. \uC815\uC9C0 \uBC84\uD2BC\uC744 \uB204\uB974\uACE0 \uACFC\uBD80\uD558 \uC6D0\uC778\uC744 \uD655\uC778\uD55C \uB4A4 \uBCF5\uADC0\uD558\uC138\uC694.", "danger");
+    refresh();
+    return;
+  }
+  eocrTripped = false;
+  overloaded = false;
+  running = false;
+  hasReset = true;
+  updateMessage("EOCR \uBCF5\uADC0 \uC644\uB8CC", `\uD2B8\uB9BD \uB798\uCE58\uB97C \uBCF5\uADC0\uD588\uC2B5\uB2C8\uB2E4. \uC124\uC815 ${settingA.toFixed(1)} A\uC640 \uBCF4\uD638 \uC811\uC810 \uACB0\uC120\uC744 \uB2E4\uC2DC \uD655\uC778\uD558\uACE0 \uAE30\uB3D9\uD558\uC138\uC694.`, "good");
+  refresh();
+});
+settingInput.addEventListener("input", () => {
+  settingA = Number(settingInput.value);
+  if (!eocrTripped) updateMessage("\uC124\uC815\uAC12 \uBCC0\uACBD", Math.abs(settingA - NOMINAL_A) < 0.05 ? "\uBAA8\uC758 \uC815\uACA9 \uC608\uC2DC\uAC12\uC5D0 \uB9DE\uCDC4\uC2B5\uB2C8\uB2E4. \uC2E4\uC81C \uC124\uC815\uC740 \uBAA8\uD130 \uBA85\uD310\uACFC \uC7A5\uBE44 \uC9C0\uCE68\uC744 \uB530\uB974\uC138\uC694." : settingA > OVERLOAD_A ? "\uACFC\uB300 \uC124\uC815 \uC608\uC2DC\uC785\uB2C8\uB2E4. 6.6 A \uBAA8\uC758 \uACFC\uBD80\uD558\uB97C \uCC28\uB2E8\uD558\uC9C0 \uBABB\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." : settingA <= NORMAL_A ? "\uACFC\uC18C \uC124\uC815 \uC608\uC2DC\uC785\uB2C8\uB2E4. \uC815\uC0C1 \uC6B4\uC804 \uC911 \uBD88\uD544\uC694 \uD2B8\uB9BD\uC774 \uC0DD\uAE38 \uC218 \uC788\uC2B5\uB2C8\uB2E4." : "\uC124\uC815\uAC12\uC744 \uD655\uC778\uD588\uC2B5\uB2C8\uB2E4. \uBAA8\uC758 \uACFC\uBD80\uD558 \uC2DC\uD5D8\uC73C\uB85C \uACB0\uACFC\uB97C \uD655\uC778\uD558\uC138\uC694.", Math.abs(settingA - NOMINAL_A) < 0.05 ? "good" : "warning");
+  refresh();
+});
+document.querySelector("#ratedPreset").addEventListener("click", () => {
+  settingInput.value = String(NOMINAL_A);
+  settingInput.dispatchEvent(new Event("input", { bubbles: true }));
+});
+document.querySelector("#highPreset").addEventListener("click", () => {
+  settingInput.value = "8";
+  settingInput.dispatchEvent(new Event("input", { bubbles: true }));
+});
+wiringSelect.addEventListener("change", () => {
+  wiringMode = wiringSelect.value;
+  updateMessage(wiringMode === "connected" ? "\uBCF4\uD638 \uC811\uC810 \uC815\uC0C1 \uACB0\uC120" : "\uC624\uB958 \uCCB4\uD5D8: \uBCF4\uD638 \uC811\uC810 \uBBF8\uC5F0\uACB0", wiringMode === "connected" ? "EOCR 95\u201396 NC \uC811\uC810\uC774 KM \uCF54\uC77C \uACBD\uB85C\uC5D0 \uC9C1\uB82C \uC5F0\uACB0\uB429\uB2C8\uB2E4." : "\uAC00\uC0C1 \uC2DC\uD5D8 \uC804\uC6A9 \uC624\uB958\uC785\uB2C8\uB2E4. \uD2B8\uB9BD \uC2E0\uD638\uAC00 \uCF54\uC77C\uC5D0 \uC804\uB2EC\uB418\uC9C0 \uC54A\uB294 \uC0C1\uD669\uC744 \uAD00\uCC30\uD55C \uB4A4 \uC815\uC9C0\uD558\uC138\uC694.", wiringMode === "connected" ? "good" : "warning");
+  refresh();
+});
+document.querySelector("#resetView").addEventListener("click", () => scene.resetCamera());
+window.addEventListener("beforeunload", () => scene.dispose(), { once: true });
+refresh();
+
+</script>
+    <style>
+
+:root {
+  font-family: 'Manrope', 'Noto Sans KR', sans-serif;
+  color: #e8f1eb;
+  background: #08110e;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --bg: #08110e;
+  --panel: #101c17;
+  --panel-raised: #14221c;
+  --line: rgba(185, 218, 199, .12);
+  --muted: #7d9688;
+  --text: #e8f1eb;
+  --green: #66d8aa;
+  --green-strong: #76edbb;
+  --amber: #ffbf68;
+  --red: #ff756b;
+  --mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(ellipse at 47% -18%, rgba(48, 99, 74, .2), transparent 42%), var(--bg); }
+button, input, select { font: inherit; }
+button { color: inherit; }
+button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--green-strong); outline-offset: 3px; }
+button:disabled { cursor: not-allowed !important; opacity: .4; }
+.app-shell { max-width: 1600px; margin: 0 auto; padding: 0 42px 26px; }
+.topbar { height: 78px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.brand { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; color: var(--text); }
+.brand-mark { position: relative; width: 34px; height: 34px; display: flex; gap: 3px; align-items: flex-end; padding: 7px; border: 1px solid rgba(102,216,170,.48); border-radius: 9px; background: rgba(102,216,170,.08); }
+.brand-mark::before { content: ''; position: absolute; top: 7px; left: 7px; width: 16px; height: 1px; background: rgba(102,216,170,.72); }
+.brand-mark i { display: block; width: 4px; border: 1px solid #66d8aa; border-radius: 1px; background: rgba(102,216,170,.24); }
+.brand-mark i:nth-child(1) { height: 8px; }.brand-mark i:nth-child(2) { height: 13px; }.brand-mark i:nth-child(3) { height: 17px; }
+.brand-copy { display: grid; line-height: 1.1; gap: 4px; }
+.brand-copy strong { font-size: 11px; letter-spacing: .19em; font-weight: 800; }.brand-copy small { color: #829a8c; font-size: 10px; letter-spacing: .04em; }
+.topbar-center { display: flex; align-items: center; gap: 9px; color: #8da398; font: 11px var(--mono); letter-spacing: .015em; }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #61d39f; box-shadow: 0 0 11px rgba(97,211,159,.68); }
+.topbar-divider { color: #435d50; }
+.lesson-chip { display: flex; align-items: center; gap: 9px; color: #9eb2a6; font-size: 10px; letter-spacing: .05em; }
+.lesson-chip strong { color: var(--green-strong); font: 500 16px var(--mono); }.chip-line { height: 1px; width: 24px; background: #52695d; }
+main { width: min(1370px, 100%); margin: 0 auto; }
+.hero-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; padding: 47px 0 31px; }
+.eyebrow, .micro-label { margin: 0; color: #88a294; font: 10px var(--mono); letter-spacing: .12em; }
+.eyebrow { display: flex; align-items: center; gap: 12px; margin-bottom: 13px; }.eyebrow span:first-child { color: var(--green); }.eyebrow-rule { width: 32px; height: 1px; background: #3a6751; }
+h1 { margin: 0; color: #f0f5f1; font-size: clamp(32px, 3.5vw, 48px); letter-spacing: -.055em; line-height: 1.19; font-weight: 700; }
+h1 em { color: #8fe4bc; font-style: normal; }
+.hero-description { margin: 15px 0 0; color: #93a89c; font-size: 13px; line-height: 1.75; letter-spacing: -.015em; }
+.hero-note { display: grid; gap: 9px; min-width: 295px; max-width: 380px; padding: 15px 17px; border-left: 1px solid rgba(102,216,170,.52); background: linear-gradient(90deg, rgba(55,106,79,.1), transparent); }
+.note-index { color: #71cfa5; font: 9px var(--mono); letter-spacing: .12em; }.hero-note strong { font-size: 12px; font-weight: 600; }.hero-note span:last-child { color: #71897b; font-size: 10px; line-height: 1.55; }
+.workbench-layout { display: grid; grid-template-columns: minmax(0, 1.67fr) minmax(310px, .82fr); gap: 14px; align-items: stretch; }
+.scene-card, .control-card, .steps-card, .check-card { border: 1px solid var(--line); border-radius: 13px; background: linear-gradient(145deg, rgba(18,31,25,.97), rgba(13,24,19,.98)); overflow: hidden; }
+.scene-card { min-width: 0; }
+.scene-card-head { height: 68px; padding: 14px 19px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(185,218,199,.09); }
+.scene-card-head h2, .control-heading h2, .section-head h2, .check-card h2 { margin: 5px 0 0; font-size: 15px; font-weight: 600; letter-spacing: -.025em; }
+.scene-card-head .micro-label, .control-card-top .micro-label, .section-head .micro-label { font-size: 9px; }
+.scene-head-right { display: flex; align-items: center; gap: 12px; }
+.scene-state { display: inline-flex; align-items: center; gap: 7px; color: #82988c; font: 10px var(--mono); }
+.scene-state i { width: 6px; height: 6px; border: 1px solid #84968b; border-radius: 50%; }.scene-state.is-running i { border: 0; background: var(--green); box-shadow: 0 0 8px var(--green); }.scene-state.is-danger { color: var(--red); }.scene-state.is-danger i { border: 0; background: var(--red); box-shadow: 0 0 9px var(--red); }.scene-state.is-warning { color: var(--amber); }
+.icon-button { width: 29px; height: 29px; border: 1px solid var(--line); border-radius: 7px; background: rgba(255,255,255,.025); color: #a5b8ad; cursor: pointer; font-size: 17px; line-height: 1; transition: .18s ease; }.icon-button:hover { border-color: rgba(102,216,170,.45); color: var(--green); background: rgba(102,216,170,.08); }
+.scene-wrap { position: relative; height: clamp(350px, 35vw, 475px); min-height: 350px; overflow: hidden; background: radial-gradient(ellipse at 50% 46%, #1b3027 0, #101c17 56%, #0b1511 100%); }
+.scene-wrap::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(7,14,11,.08), transparent 25%, transparent 76%, rgba(7,14,11,.34)); }
+#panelCanvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; outline: none; }
+#panelCanvas:active { cursor: grabbing; }
+.scene-stamp { position: absolute; z-index: 1; top: 16px; left: 18px; display: flex; align-items: center; gap: 8px; color: rgba(164,196,179,.68); font: 9px var(--mono); letter-spacing: .12em; pointer-events: none; }
+.stamp-cross { display: grid; place-items: center; width: 18px; height: 18px; color: var(--green); border: 1px solid rgba(102,216,170,.34); border-radius: 5px; font: 14px var(--mono); }
+.scene-caption { position: absolute; z-index: 1; bottom: 15px; left: 18px; display: flex; align-items: center; gap: 8px; color: #71877a; font: 9px var(--mono); pointer-events: none; }.scene-caption b { color: #546b5e; font-weight: 400; }.caption-line { width: 18px; height: 1px; background: #527462; }
+.scene-readout { position: absolute; z-index: 1; right: 18px; bottom: 14px; display: grid; gap: 3px; padding: 9px 12px; border: 1px solid rgba(157,199,176,.15); border-radius: 8px; background: rgba(9,18,14,.78); backdrop-filter: blur(8px); pointer-events: none; }
+.readout-label { color: #7c9487; font: 8px var(--mono); text-transform: uppercase; letter-spacing: .07em; }.scene-readout strong { color: #ccf3dd; font: 500 20px var(--mono); }.scene-readout small { color: #8cac9a; font-size: 10px; }
+.component-tags { position: absolute; z-index: 1; inset: 0; pointer-events: none; color: #bed6c8; font: 8px var(--mono); letter-spacing: .08em; }
+.component-tags span { position: absolute; padding: 4px 6px; border: 1px solid rgba(184,216,198,.16); border-radius: 4px; background: rgba(7,16,12,.47); backdrop-filter: blur(4px); }.tag-eocr { left: 27%; top: 30%; }.tag-km { left: 52%; top: 31%; }.tag-motor { left: 75%; top: 61%; }
+.scene-legend { min-height: 42px; padding: 0 18px; display: flex; align-items: center; gap: 18px; border-top: 1px solid rgba(185,218,199,.08); color: #81988b; font-size: 9px; }.scene-legend > span { display: inline-flex; align-items: center; gap: 7px; }.legend-dot { width: 6px; height: 6px; display: inline-block; border-radius: 50%; }.legend-dot.green { background: var(--green); box-shadow: 0 0 7px rgba(102,216,170,.6); }.legend-dot.red { background: var(--red); }.legend-phases { margin-left: auto; gap: 5px !important; color: #81988b; }.legend-phases b { font: 9px var(--mono); }.legend-phases b:nth-child(1) { color: #ef706b; }.legend-phases b:nth-child(2) { color: #f4c65e; }.legend-phases b:nth-child(3) { color: #64a9ff; }
+.control-card { padding: 16px 17px 13px; }
+.control-card-top { display: flex; align-items: center; justify-content: space-between; }.sim-only { padding: 4px 7px; border: 1px solid rgba(102,216,170,.22); border-radius: 4px; color: #79d7ae; background: rgba(102,216,170,.06); font: 8px var(--mono); letter-spacing: .1em; }
+.control-heading { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }.control-heading h2 { margin: 0; font-size: 18px; }
+.state-tag { padding: 5px 9px; border: 1px solid rgba(165,196,178,.16); border-radius: 20px; color: #9bb0a3; background: rgba(255,255,255,.025); font: 9px var(--mono); }.state-tag.is-running { color: var(--green); border-color: rgba(102,216,170,.28); background: rgba(102,216,170,.07); }.state-tag.is-warning { color: var(--amber); border-color: rgba(255,191,104,.28); background: rgba(255,191,104,.07); }.state-tag.is-danger { color: var(--red); border-color: rgba(255,117,107,.32); background: rgba(255,117,107,.08); }
+.control-intro { margin: 5px 0 14px; color: #81968a; font-size: 10px; }
+.setting-block { padding: 12px 11px 10px; border: 1px solid rgba(186,218,198,.1); border-radius: 9px; background: rgba(5,14,10,.22); }
+.setting-title { display: flex; align-items: baseline; justify-content: space-between; }.setting-title label, .wiring-block > label { color: #cedbd2; font-size: 10px; font-weight: 600; }.subtle { color: #73897b; font-size: 9px; font-weight: 400; }.setting-value { color: var(--green-strong); font: 500 18px var(--mono); }.setting-value small { color: #80998a; font-size: 10px; }.setting-value.setting-high { color: var(--amber); }
+#currentSetting { width: 100%; height: 16px; margin: 12px 0 0; appearance: none; background: transparent; cursor: pointer; }
+#currentSetting::-webkit-slider-runnable-track { height: 3px; border-radius: 3px; background: linear-gradient(90deg, #5ecb9e, #365747); }
+#currentSetting::-moz-range-track { height: 3px; border-radius: 3px; background: linear-gradient(90deg, #5ecb9e, #365747); }
+#currentSetting::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; margin-top: -5px; border: 3px solid #0c1812; border-radius: 50%; background: var(--green-strong); box-shadow: 0 0 0 1px rgba(118,237,187,.66), 0 0 10px rgba(118,237,187,.25); }
+#currentSetting::-moz-range-thumb { width: 10px; height: 10px; border: 3px solid #0c1812; border-radius: 50%; background: var(--green-strong); box-shadow: 0 0 0 1px rgba(118,237,187,.66); }
+#currentSetting:disabled { opacity: .35; cursor: not-allowed; }
+.range-labels { display: flex; align-items: center; justify-content: space-between; color: #70877a; font: 8px var(--mono); }.range-reference { color: #8cc9a9; }
+.preset-row { display: flex; gap: 7px; margin-top: 10px; }.preset-button { flex: 1; padding: 7px 8px; display: flex; align-items: center; justify-content: space-between; gap: 6px; border: 1px solid rgba(184,218,198,.12); border-radius: 6px; color: #96aa9d; background: rgba(255,255,255,.02); font-size: 9px; cursor: pointer; transition: .18s ease; }.preset-button b { color: #c0d8c9; font: 9px var(--mono); }.preset-button:hover, .preset-button.is-selected { border-color: rgba(102,216,170,.32); color: #b6d9c6; background: rgba(102,216,170,.065); }.preset-button.warning-preset:hover, .preset-button.warning-preset.is-selected { border-color: rgba(255,191,104,.36); background: rgba(255,191,104,.06); }.preset-button.warning-preset b { color: #e0b977; }
+.wiring-block { margin-top: 12px; }.select-wrap { position: relative; margin-top: 6px; }.select-wrap select { width: 100%; appearance: none; padding: 9px 30px 9px 10px; border: 1px solid rgba(184,218,198,.13); border-radius: 6px; color: #b8cbc0; background: #13211b; font-size: 9px; cursor: pointer; }.select-wrap select option { color: #e8f1eb; background: #13211b; }.select-chevron { position: absolute; top: 6px; right: 11px; color: #88a091; pointer-events: none; }
+.action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }.primary-button, .secondary-button { min-height: 37px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; transition: .18s ease; }.primary-button { border: 1px solid rgba(115,232,180,.8); color: #062016; background: linear-gradient(135deg, #81e8b9, #52c895); box-shadow: 0 4px 16px rgba(65,194,137,.09); }.primary-button:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }.secondary-button { border: 1px solid rgba(184,218,198,.16); color: #bdcdc3; background: rgba(255,255,255,.035); }.secondary-button:hover:not(:disabled) { border-color: rgba(255,117,107,.42); color: #ffaaa2; background: rgba(255,117,107,.05); }.button-icon { margin-right: 5px; font-size: 9px; }
+.overload-button { width: 100%; min-height: 45px; margin-top: 8px; padding: 6px 10px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(255,191,104,.24); border-radius: 7px; color: #f0c37d; background: rgba(255,191,104,.055); text-align: left; cursor: pointer; transition: .18s ease; }.overload-button:hover:not(:disabled) { border-color: rgba(255,191,104,.48); background: rgba(255,191,104,.1); }.pulse-icon { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: #ffd18b; background: rgba(255,191,104,.11); font-size: 15px; }.overload-button b { display: block; font-size: 9px; }.overload-button small { display: block; margin-top: 2px; color: #b69a70; font-size: 8px; }.button-arrow { margin-left: auto; font: 12px var(--mono); }
+.reset-button { width: 100%; padding: 7px; border: 0; color: #94a99b; background: transparent; font-size: 9px; cursor: pointer; }.reset-button span { margin-right: 4px; font-size: 12px; }.reset-button:hover:not(:disabled) { color: var(--green); }
+.message-box { min-height: 58px; margin-top: 10px; padding: 9px 10px; display: flex; align-items: flex-start; gap: 9px; border: 1px solid rgba(181,213,194,.13); border-radius: 7px; background: rgba(255,255,255,.025); }.message-icon { flex: 0 0 17px; width: 17px; height: 17px; display: grid; place-items: center; border: 1px solid #82988a; border-radius: 50%; color: #a7b9ad; font: 10px var(--mono); }.message-box strong { display: block; color: #cbd9d0; font-size: 9px; font-weight: 700; }.message-box p { margin: 3px 0 0; color: #819488; font-size: 8px; line-height: 1.48; }.message-box[data-tone="good"] { border-color: rgba(102,216,170,.23); background: rgba(102,216,170,.04); }.message-box[data-tone="good"] .message-icon { border-color: rgba(102,216,170,.65); color: var(--green); }.message-box[data-tone="good"] strong { color: #9be2be; }.message-box[data-tone="warning"] { border-color: rgba(255,191,104,.23); background: rgba(255,191,104,.045); }.message-box[data-tone="warning"] .message-icon { border-color: rgba(255,191,104,.7); color: var(--amber); }.message-box[data-tone="warning"] strong { color: #f1c67f; }.message-box[data-tone="danger"] { border-color: rgba(255,117,107,.32); background: rgba(255,117,107,.07); animation: alert-in .25s ease-out; }.message-box[data-tone="danger"] .message-icon { border-color: rgba(255,117,107,.8); color: var(--red); }.message-box[data-tone="danger"] strong { color: #ff9a91; }
+@keyframes alert-in { from { transform: translateY(2px); } to { transform: translateY(0); } }
+.current-meter { margin-top: 10px; padding: 8px 1px 0; border-top: 1px solid rgba(185,218,199,.1); }.meter-heading, .meter-values { display: flex; justify-content: space-between; align-items: center; }.meter-heading { color: #7e9387; font: 8px var(--mono); letter-spacing: .06em; }.meter-heading span:last-child { color: #93a99a; letter-spacing: 0; }.meter-track { position: relative; height: 4px; margin: 8px 0 6px; border-radius: 4px; background: linear-gradient(90deg, rgba(102,216,170,.3), rgba(255,191,104,.28), rgba(255,117,107,.3)); }.meter-track > span { position: absolute; left: 0; top: 0; height: 100%; width: 0; border-radius: inherit; background: var(--green); transition: width .34s ease, background .25s ease; }.meter-track > span.meter-danger { background: var(--red); box-shadow: 0 0 8px rgba(255,117,107,.42); }.meter-marker { position: absolute; top: -3px; left: 50%; width: 1px; height: 10px; background: #d9eadf; opacity: .55; }.meter-values { color: #687f72; font: 8px var(--mono); }.meter-values strong { color: #c4e5d1; font-size: 12px; font-weight: 500; }.meter-values small { color: #8ba296; font-size: 8px; }
+.diagram-section { margin-top: 28px; }.section-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px; }.section-head h2 { margin-top: 5px; font-size: 15px; }.diagram-legend { display: inline-flex; align-items: center; gap: 7px; color: #82998b; font-size: 9px; }.diagram-legend i { width: 17px; height: 2px; background: var(--green); box-shadow: 0 0 7px rgba(102,216,170,.4); }
+.diagram-frame { padding: 12px 18px 5px; border: 1px solid var(--line); border-radius: 10px; background: linear-gradient(110deg, #101c17, #0d1813); overflow-x: auto; }.circuit-svg { display: block; width: 100%; min-width: 660px; height: auto; }.svg-overline { fill: #7a9385; font: 9px var(--mono); letter-spacing: .13em; }.svg-small { fill: #81978a; font: 10px 'Noto Sans KR', sans-serif; }.svg-source { fill: #c7dacf; font: 11px var(--mono); }.diagram-module { fill: #15271f; stroke: rgba(127,172,145,.35); stroke-width: 1.2; }.eocr-module { stroke: rgba(102,216,170,.43); }.svg-module { fill: #d9e9df; font: 600 15px var(--mono); letter-spacing: .08em; }.source-node, .control-node { fill: #1b3026; stroke: rgba(149,190,164,.43); stroke-width: 1.5; }.motor-node { fill: #1a2e24; stroke: rgba(128,173,145,.44); stroke-width: 1.5; }.motor-core { fill: #203c2f; stroke: rgba(123,182,147,.35); }.motor-cross { stroke: #8eb9a0; stroke-width: 2; }.diagram-divider { stroke: rgba(185,218,199,.1); stroke-width: 1; }.power-wires path { fill: none; stroke-width: 2.5; opacity: .83; }.phase-r { stroke: #ef706b; }.phase-s { stroke: #f4c65e; }.phase-t { stroke: #64a9ff; }.control-segment { fill: none; stroke: #40594c; stroke-width: 2.7; stroke-linecap: round; transition: stroke .2s, opacity .2s; }.control-contact, .eocr-contact { fill: #12221a; stroke: #527a62; stroke-width: 1.2; }.contact-symbol { fill: none; stroke: #90aa99; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }.coil-node { fill: #16281f; stroke: #527a62; stroke-width: 1.4; }.coil-label { fill: #c4d8cb; font: 9px var(--mono); }.diagram-led { fill: #40594c; transition: fill .2s, filter .2s; }.diagram-led.led-on { fill: var(--green); filter: drop-shadow(0 0 5px rgba(102,216,170,.8)); }.diagram-led.led-trip { fill: var(--red); filter: drop-shadow(0 0 5px rgba(255,117,107,.8)); }.bypass-wire { fill: none; stroke: #a9674f; stroke-width: 2; stroke-dasharray: 5 4; }.bypass-label { fill: #d29373; font: 9px 'Noto Sans KR', sans-serif; opacity: 0; transition: opacity .2s; }.bypass-group { opacity: 0; transition: opacity .2s; }.contact-open { stroke: var(--red); }
+.circuit-svg[data-energized="true"] .control-segment { stroke: var(--green); filter: drop-shadow(0 0 3px rgba(102,216,170,.28)); }.circuit-svg[data-tripped="true"][data-wiring="connected"] [data-segment="after"], .circuit-svg[data-tripped="true"][data-wiring="connected"] [data-segment="coil"] { stroke: #394d42; filter: none; }.circuit-svg[data-wiring="disconnected"] .bypass-group { opacity: 1; }.circuit-svg[data-wiring="disconnected"] .bypass-label { opacity: 1; }.circuit-svg[data-wiring="disconnected"] #contactBefore, .circuit-svg[data-wiring="disconnected"] #contactAfter { stroke: #b36e52; stroke-dasharray: 4 5; }.circuit-svg[data-wiring="disconnected"][data-energized="true"] [data-segment="supply"], .circuit-svg[data-wiring="disconnected"][data-energized="true"] [data-segment="stop"], .circuit-svg[data-wiring="disconnected"][data-energized="true"] [data-segment="coil"] { stroke: var(--red); }.circuit-svg[data-wiring="disconnected"] .eocr-contact { stroke: #dc8664; }.circuit-svg[data-wiring="disconnected"] .contact-symbol { stroke: #dc8664; }
+.learning-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 14px; margin-top: 14px; }.steps-card, .check-card { padding: 17px 19px; }.section-head.compact { margin-bottom: 9px; }.completion-count { color: #82988b; font: 9px var(--mono); }.completion-count b { color: var(--green); font-size: 13px; font-weight: 500; }.practice-steps { list-style: none; margin: 0; padding: 0; }.practice-steps li { min-height: 50px; display: grid; grid-template-columns: 31px 1fr 18px; align-items: center; gap: 7px; border-top: 1px solid rgba(185,218,199,.08); }.step-number { color: #658071; font: 9px var(--mono); }.practice-steps li > span:nth-child(2) { display: grid; gap: 3px; }.practice-steps b { color: #c8d8ce; font-size: 10px; font-weight: 600; }.practice-steps small { color: #7d9385; font-size: 9px; }.step-check { color: #52695c; font: normal 12px var(--mono); text-align: center; }.practice-steps li.is-complete .step-number, .practice-steps li.is-complete .step-check { color: var(--green); }.practice-steps li.is-complete b { color: #a9d9bd; }
+.check-card { background: linear-gradient(135deg, #14231c, #101b16); }.check-card h2 { margin: 6px 0 10px; }.check-line { min-height: 31px; display: grid; grid-template-columns: 25px 1fr 15px; align-items: center; gap: 5px; border-top: 1px solid rgba(185,218,199,.08); }.check-line > span { color: #6e8879; font: 8px var(--mono); }.check-line p { margin: 0; color: #b4c5ba; font-size: 9px; }.check-line i { color: #708779; font: normal 13px var(--mono); }.safety-note { margin: 10px 0 0; padding: 8px; display: flex; gap: 7px; align-items: flex-start; border-radius: 5px; color: #9fb19f; background: rgba(255,191,104,.055); font-size: 8px; line-height: 1.45; }.safety-note span { color: var(--amber); font: 11px var(--mono); }
+.footer { width: min(1370px, 100%); margin: 22px auto 0; padding-top: 13px; display: flex; justify-content: space-between; border-top: 1px solid var(--line); color: #63796b; font: 8px var(--mono); letter-spacing: .025em; }.footer i { color: var(--green); font-style: normal; }
+
+@media (min-width: 1500px) { .scene-wrap { height: 500px; } }
+@media (max-width: 1050px) {
+  .app-shell { padding: 0 25px 22px; }.workbench-layout { grid-template-columns: minmax(0, 1.35fr) minmax(300px, .9fr); }.scene-wrap { height: 420px; }.hero-row { padding-top: 39px; }.hero-note { min-width: 260px; }
+}
+@media (max-width: 790px) {
+  .app-shell { padding: 0 18px 20px; }.topbar { height: 65px; }.topbar-center { display: none; }.hero-row { align-items: flex-start; padding: 32px 0 23px; flex-direction: column; gap: 17px; }.hero-note { width: 100%; max-width: none; min-width: 0; padding: 10px 12px; gap: 5px; }.hero-note span:last-child { display: none; }.workbench-layout { grid-template-columns: 1fr; }.scene-wrap { height: min(68vw, 465px); min-height: 300px; }.control-card { padding: 16px; }.setting-block { padding: 12px; }.diagram-section { margin-top: 22px; }.learning-grid { grid-template-columns: 1fr; }.footer { gap: 12px; flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+  .app-shell { padding: 0 12px 16px; }.topbar { height: 58px; }.brand-mark { width: 30px; height: 30px; }.lesson-chip { gap: 6px; font-size: 9px; }.chip-line { width: 13px; }.hero-row { padding-top: 27px; }.eyebrow { font-size: 8px; gap: 8px; }.eyebrow-rule { width: 20px; }h1 { font-size: 34px; }.hero-description { font-size: 11px; }.hero-note strong { font-size: 11px; }.scene-card-head { height: 61px; padding: 12px; }.scene-card-head h2 { font-size: 13px; }.scene-wrap { min-height: 265px; }.scene-legend { gap: 10px; padding: 0 10px; font-size: 8px; }.scene-legend > span { gap: 5px; }.scene-caption { left: 11px; bottom: 11px; font-size: 8px; }.scene-readout { right: 10px; bottom: 9px; }.component-tags { display: none; }.section-head { align-items: flex-start; gap: 8px; }.section-head h2 { font-size: 13px; }.diagram-legend { font-size: 8px; white-space: nowrap; }.diagram-frame { padding: 8px 10px 3px; }.steps-card, .check-card { padding: 14px 13px; }.footer { font-size: 7px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* Keep the disconnected-contact bypass absent until that fault is selected. */
+.bypass-group { display: none; opacity: 1; }
+.circuit-svg[data-wiring="disconnected"] .bypass-group { display: inline; }
+
+/* The contact fault is shown as an open/missing connection, never as a jumper path. */
+.fault-callout { display: none; }
+.circuit-svg[data-wiring="disconnected"] .fault-callout { display: inline; }
+.fault-callout-box { fill: rgba(255,117,107,.09); stroke: rgba(255,117,107,.48); stroke-width: 1; }
+.fault-callout-text { fill: #ff9e93; font: 8px 'Noto Sans KR', sans-serif; }
+.bypass-group { display: none !important; }
+.circuit-svg[data-wiring="disconnected"] #contactBefore,
+.circuit-svg[data-wiring="disconnected"] #contactAfter { display: none; }
+
+
+/* Animated dashes show the three-phase current moving toward the motor while energized. */
+.circuit-svg[data-energized="true"] .power-wires path {
+  stroke-dasharray: 9 7;
+  animation: current-flow 650ms linear infinite;
+  filter: drop-shadow(0 0 3px currentColor);
+}
+@keyframes current-flow {
+  to { stroke-dashoffset: -16; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .circuit-svg[data-energized="true"] .power-wires path { animation-duration: 2.5s; }
+}
+</style>
+      <!-- Three.js is loaded from jsDelivr; this file needs an internet connection. -->
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>
